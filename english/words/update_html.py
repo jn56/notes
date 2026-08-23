@@ -23,31 +23,55 @@ def get_ipa(word):
     except Exception:
         return ''
 
+tags_keywords = {
+    'Tech': ['程式', '電腦', '系統', '資料', '網路', '技術', '科技', '研發', '機器', '人工智慧', '晶片', '裝置', '軟體', '硬體', '伺服器', '雲端', '安全', 'AI', '架構', '網路安全', '虛擬', '數位', '自動化', '演算法'],
+    'Economy': ['經濟', '商業', '企業', '投資', '貸款', '財務', '銀行', '貨幣', '資金', '市場', '交易', '成本', '費用', '收益', '獲利', '薪水', '購買', '銷售', '公司', '股票', '利息', '資產', '商務', '產業', '行銷'],
+    'Global': ['國際', '國家', '政府', '政治', '戰爭', '軍事', '外交', '法律', '全球', '協議', '條約', '組織', '社會', '選舉', '政策', '條款', '管轄', '司法', '權利', '義務', '世界', '跨國'],
+}
+
+def assign_tags(row):
+    text_to_check = row[0] + ' ' + row[1] + ' ' + row[2] + ' ' + row[3]
+    assigned = []
+    for tag, keywords in tags_keywords.items():
+        if any(kw in text_to_check for kw in keywords):
+            assigned.append(tag)
+    
+    if not assigned:
+        assigned.append('Life')
+    
+    return ','.join(assigned[:2])
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(script_dir, 'words.csv')
 html_path = os.path.join(script_dir, 'words.html')
 
-print(f"正在讀取並處理 {csv_path}（若有新單字將自動取得音標）...")
+print(f"正在讀取並處理 {csv_path}（自動取得音標與分類標籤）...")
 try:
     with open(csv_path, 'r', encoding='utf-8') as f:
         reader = csv.reader(f)
         header = next(reader)
         if len(header) < 5:
             header.append('音標')
+        if len(header) < 6:
+            header.append('標籤')
         rows = list(reader)
 except FileNotFoundError:
     print("找不到 words.csv，請確認檔案是否存在。")
     exit(1)
 
 def process_row(row):
-    if len(row) >= 5 and row[4].strip():
-        return row
-    word = row[0]
-    ipa = get_ipa(word)
-    if len(row) >= 5:
-        row[4] = ipa
-    else:
-        row.append(ipa)
+    # Ensure row has 6 columns
+    while len(row) < 6:
+        row.append('')
+        
+    # Get IPA if missing
+    if not row[4].strip():
+        row[4] = get_ipa(row[0])
+        
+    # Assign tags if missing
+    if not row[5].strip():
+        row[5] = assign_tags(row)
+        
     return row
 
 # 使用多執行緒加速音標查詢
@@ -86,6 +110,6 @@ if start_idx != -1 and end_idx != -1 and start_idx < end_idx:
     )
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(new_html)
-    print("成功將資料與音標更新至 words.html 中！")
+    print("成功將資料、音標與標籤更新至 words.html 中！")
 else:
     print("在 words.html 中找不到對應的標記區塊，更新失敗。")
