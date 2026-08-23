@@ -4,6 +4,7 @@ import urllib.request
 import urllib.parse
 import json
 import concurrent.futures
+import io
 
 def get_ipa(word):
     clean = word.split('/')[0].strip()
@@ -30,7 +31,8 @@ tags_keywords = {
 }
 
 def assign_tags(row):
-    text_to_check = row[0] + ' ' + row[1] + ' ' + row[2] + ' ' + row[3]
+    # row 含有英文單字、英文例句、詞性與翻譯、例句翻譯
+    text_to_check = " ".join(row[:4])
     assigned = []
     for tag, keywords in tags_keywords.items():
         if any(kw in text_to_check for kw in keywords):
@@ -45,15 +47,17 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(script_dir, 'words.csv')
 html_path = os.path.join(script_dir, 'words.html')
 
-print(f"正在讀取並處理 {csv_path}（自動取得音標與分類標籤）...")
+print(f"正在讀取 {csv_path}（不更動原始檔案，僅於記憶體中處理）...")
 try:
     with open(csv_path, 'r', encoding='utf-8') as f:
         reader = csv.reader(f)
         header = next(reader)
-        if len(header) < 5:
+        # Ensure header has 6 columns for HTML parsing
+        while len(header) < 5:
             header.append('音標')
-        if len(header) < 6:
+        while len(header) < 6:
             header.append('標籤')
+            
         rows = list(reader)
 except FileNotFoundError:
     print("找不到 words.csv，請確認檔案是否存在。")
@@ -61,32 +65,32 @@ except FileNotFoundError:
 
 def process_row(row):
     # Ensure row has 6 columns
+    while len(row) < 5:
+        row.append('')
     while len(row) < 6:
         row.append('')
         
-    # Get IPA if missing
+    # Get IPA if missing (only affects memory, not words.csv)
     if not row[4].strip():
         row[4] = get_ipa(row[0])
         
-    # Assign tags if missing
+    # Assign tags
     if not row[5].strip():
         row[5] = assign_tags(row)
         
     return row
 
+print("正在處理音標與分類標籤...")
 # 使用多執行緒加速音標查詢
 with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
     updated_rows = list(executor.map(process_row, rows))
 
-# 寫回 words.csv
-with open(csv_path, 'w', encoding='utf-8', newline='') as f:
-    writer = csv.writer(f)
-    writer.writerow(header)
-    writer.writerows(updated_rows)
-
-# 讀取更新後的 csv 內容為字串
-with open(csv_path, 'r', encoding='utf-8') as f:
-    csv_content = f.read()
+# 轉換為 CSV 字串
+output = io.StringIO()
+writer = csv.writer(output)
+writer.writerow(header)
+writer.writerows(updated_rows)
+csv_content = output.getvalue()
 
 print(f"正在更新 {html_path}...")
 try:
@@ -110,6 +114,6 @@ if start_idx != -1 and end_idx != -1 and start_idx < end_idx:
     )
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(new_html)
-    print("成功將資料、音標與標籤更新至 words.html 中！")
+    print("成功將資料更新至 words.html 中！(words.csv 保持原樣不變)")
 else:
     print("在 words.html 中找不到對應的標記區塊，更新失敗。")
