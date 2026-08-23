@@ -82,7 +82,7 @@
         }
                         .controls-wrapper {
             position: absolute;
-            top: 15px;
+            top: 30px; /* moved down slightly from 15px */
             left: 50%;
             transform: translateX(-50%);
             z-index: 10;
@@ -115,12 +115,23 @@
             align-items: center;
             cursor: pointer;
             user-select: none;
-            background: #fff;
-            padding: 6px 12px;
+            background: #e2e8f0; /* Default off color */
+            color: #4a5568;
+            padding: 6px 14px;
             border-radius: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             white-space: nowrap;
             font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        .switch-label input[type="checkbox"] {
+            display: none;
+        }
+        .switch-label:has(input:checked) {
+            background: #4299e1; /* Blue when on */
+            color: #ffffff;
+            box-shadow: 0 4px 6px rgba(66,153,225,0.3);
         }
         .switch-label input {
             margin-right: 8px;
