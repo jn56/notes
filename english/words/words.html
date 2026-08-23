@@ -96,7 +96,7 @@
             display: flex;
             flex-direction: row;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             gap: 8px;
             width: 100%;
             max-width: 95vw;
@@ -153,7 +153,7 @@
             body {
             -webkit-tap-highlight-color: transparent;
                 justify-content: flex-start;
-                padding-top: 10vh;
+                padding-top: 130px;
             }
             .card {
             -webkit-tap-highlight-color: transparent;
@@ -1341,16 +1341,55 @@ scepticism,"Despite the rapid advancement of technology, many people view artifi
         init();
     
         
-        let autoFlipTimeout = null;
-        const stateDurations = [5000, 6000, 5000, 7000];
+        let autoFlipInterval = null;
+        let remainingSeconds = 0;
+        const stateDurations = [5, 6, 5, 7];
         
+        function updateTimerDisplay() {
+            let timerEl = document.getElementById('auto-timer');
+            if (!timerEl) {
+                timerEl = document.createElement('div');
+                timerEl.id = 'auto-timer';
+                timerEl.style.position = 'absolute';
+                timerEl.style.top = '20px';
+                timerEl.style.left = '20px';
+                timerEl.style.fontSize = '12px';
+                timerEl.style.fontWeight = 'bold';
+                timerEl.style.color = '#718096';
+                timerEl.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+                timerEl.style.padding = '4px 10px';
+                timerEl.style.borderRadius = '12px';
+                timerEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                document.getElementById('card').appendChild(timerEl);
+            }
+            
+            const autoSwitch = document.getElementById('auto-switch');
+            if (autoSwitch && autoSwitch.checked) {
+                timerEl.style.display = 'block';
+                timerEl.textContent = remainingSeconds + 's';
+            } else {
+                timerEl.style.display = 'none';
+            }
+        }
+
         function triggerAutoFlip() {
-            clearTimeout(autoFlipTimeout);
+            clearInterval(autoFlipInterval);
             const autoSwitch = document.getElementById('auto-switch');
             if (autoSwitch && autoSwitch.checked && wordsData.length > 0) {
-                autoFlipTimeout = setTimeout(() => {
-                    nextPage();
-                }, stateDurations[currentStateIdx]);
+                remainingSeconds = stateDurations[currentStateIdx];
+                updateTimerDisplay();
+                
+                autoFlipInterval = setInterval(() => {
+                    remainingSeconds--;
+                    if (remainingSeconds <= 0) {
+                        clearInterval(autoFlipInterval);
+                        nextPage();
+                    } else {
+                        updateTimerDisplay();
+                    }
+                }, 1000);
+            } else {
+                updateTimerDisplay(); // hide it
             }
         }
         
