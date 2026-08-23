@@ -74,27 +74,43 @@
             padding: 0 10px;
             line-height: 1.6;
         }
-                .controls {
+                
+        
+        /* ensure the container centers items if they fit */
+        @media (min-width: 600px) {
+            
+        }
+                        .controls-wrapper {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+        .controls-row {
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: flex-start;
             gap: 8px;
-            margin-bottom: 20px;
             width: 100%;
-            max-width: 90vw;
+            max-width: 95vw;
             overflow-x: auto;
             white-space: nowrap;
             scrollbar-width: none;
         }
-        .controls::-webkit-scrollbar {
+        .controls-row::-webkit-scrollbar {
             display: none;
         }
-        /* ensure the container centers items if they fit */
         @media (min-width: 600px) {
-            .controls { justify-content: center; }
+            .controls-row { justify-content: center; }
         }
-                .switch-label {
+        .switch-label {
             display: flex;
             align-items: center;
             cursor: pointer;
@@ -959,12 +975,17 @@ unease,She felt a deep sense of unease.,n. 不安\n(worry or anxiety),她感到�
 scepticism,"Despite the rapid advancement of technology, many people view artificial intelligence with deep skepticism, fearing it will eventually lead to a dystopian society.",n. 懷疑態度\n(an attitude that shows you doubt),儘管科技快速發展，許多人仍對AI抱持深深的懷疑，擔心它最終會導致反烏托邦社會。,,"Tech,Global"
 /*CSV_END*/</script>
 
-    <div class="controls">
-        <label class="switch-label"><input type="checkbox" id="random-switch"> Random</label>
-        <label class="switch-label"><input type="checkbox" value="Life" checked> Life</label>
-        <label class="switch-label"><input type="checkbox" value="Tech" checked> Tech</label>
-        <label class="switch-label"><input type="checkbox" value="Economy" checked> Econ</label>
-        <label class="switch-label"><input type="checkbox" value="Global" checked> Global</label>
+        <div class="controls-wrapper">
+        <div class="controls-row">
+            <label class="switch-label"><input type="checkbox" id="auto-switch"> Auto</label>
+            <label class="switch-label"><input type="checkbox" id="random-switch"> Rand</label>
+        </div>
+        <div class="controls-row">
+            <label class="switch-label"><input type="checkbox" value="Life" checked> Life</label>
+            <label class="switch-label"><input type="checkbox" value="Tech" checked> Tech</label>
+            <label class="switch-label"><input type="checkbox" value="Economy" checked> Econ</label>
+            <label class="switch-label"><input type="checkbox" value="Global" checked> Glb</label>
+        </div>
     </div>
 
     <div class="card-container">
@@ -1213,6 +1234,7 @@ scepticism,"Despite the rapid advancement of technology, many people view artifi
                 }
                 cardContent.style.whiteSpace = "normal"; // 恢復
             }
+            triggerAutoFlip();
         }
 
         // 當視窗大小改變時重新渲染以調整字體
@@ -1318,6 +1340,24 @@ scepticism,"Despite the rapid advancement of technology, many people view artifi
 
         init();
     
+        
+        let autoFlipTimeout = null;
+        const stateDurations = [5000, 6000, 5000, 7000];
+        
+        function triggerAutoFlip() {
+            clearTimeout(autoFlipTimeout);
+            const autoSwitch = document.getElementById('auto-switch');
+            if (autoSwitch && autoSwitch.checked && wordsData.length > 0) {
+                autoFlipTimeout = setTimeout(() => {
+                    nextPage();
+                }, stateDurations[currentStateIdx]);
+            }
+        }
+        
+        document.getElementById('auto-switch').addEventListener('change', () => {
+            triggerAutoFlip();
+        });
+        
         function applyFilters() {
             const checkboxes = document.querySelectorAll('label.switch-label input[value]');
             const checkedTags = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
