@@ -21,23 +21,30 @@ if os.path.exists(cache_path):
 
 def fetch_single_word_ipa(word):
     if not word.strip(): return ''
-    try:
-        url = 'https://api.dictionaryapi.dev/api/v2/entries/en/' + urllib.parse.quote(word)
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=5) as response:
-            data = json.loads(response.read().decode())
-            ipa = data[0].get('phonetic', '')
-            if not ipa:
-                for p in data[0].get('phonetics', []):
-                    if 'text' in p and p['text']:
-                        ipa = p['text']
-                        break
-            return ipa
-    except urllib.error.HTTPError as e:
-        if e.code == 429:
-            time.sleep(1) # wait if rate limited
-    except Exception:
-        pass
+    url = 'https://api.dictionaryapi.dev/api/v2/entries/en/' + urllib.parse.quote(word)
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    
+    retries = 3
+    for attempt in range(retries):
+        try:
+            with urllib.request.urlopen(req, timeout=5) as response:
+                data = json.loads(response.read().decode())
+                ipa = data[0].get('phonetic', '')
+                if not ipa:
+                    for p in data[0].get('phonetics', []):
+                        if 'text' in p and p['text']:
+                            ipa = p['text']
+                            break
+                return ipa
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                time.sleep(2) # wait longer if rate limited
+            elif e.code == 404:
+                return '' # Not found, don't retry
+            else:
+                pass
+        except Exception:
+            pass
     return ''
 
 def get_ipa(word):
@@ -49,19 +56,23 @@ def get_ipa(word):
 
     # if it's a phrase, try to get IPA for each word
     parts = clean.split()
-    ipas = []
-    for p in parts:
-        ipa = fetch_single_word_ipa(p)
-        if ipa:
-            ipas.append(ipa)
-        else:
-            ipas.append(p) # fallback to word if no ipa
-            
-    result_ipa = ' '.join(ipas)
-    ipa_cache[clean] = result_ipa
+    if len(parts) == 1:
+        result_ipa = fetch_single_word_ipa(parts[0])
+    else:
+        ipas = []
+        for p in parts:
+            ipa = fetch_single_word_ipa(p)
+            if ipa:
+                ipas.append(ipa)
+            else:
+                ipas.append(p) # fallback to word if no ipa for a part of phrase
+        result_ipa = ' '.join(ipas)
+        
+    if result_ipa and result_ipa != clean:
+        ipa_cache[clean] = result_ipa
+        return result_ipa
     
-    # Save cache periodically or let main thread save it
-    return result_ipa
+    return ''
 
 tags_keywords = {
     'Tech': ['程式', '電腦', '系統', '資料', '網路', '技術', '科技', '研發', '機器', '人工智慧', '晶片', '裝置', '軟體', '硬體', '伺服器', '雲端', '安全', 'AI', '架構', '網路安全', '虛擬', '數位', '自動化', '演算法'],
@@ -107,8 +118,7 @@ def process_row(row):
         row.append('')
         
     if not row[4].strip():
-        # sleep slightly to avoid aggressive rate limiting
-        time.sleep(0.1)
+        time.sleep(0.5) # slow down overall to be nice to the API
         row[4] = get_ipa(row[0])
         
     if not row[5].strip():
@@ -117,8 +127,7 @@ def process_row(row):
     return row
 
 print("正在處理音標與分類標籤...")
-# max_workers 降到 3，避免 API Rate Limit
-with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
     updated_rows = list(executor.map(process_row, rows))
 
 # Save cache
