@@ -5,12 +5,24 @@ import urllib.parse
 import json
 import concurrent.futures
 import io
+import time
 
-def get_ipa(word):
-    clean = word.split('/')[0].strip()
-    clean = clean.replace('[', '').replace(']', '')
+script_dir = os.path.dirname(os.path.abspath(__file__))
+cache_path = os.path.join(script_dir, 'ipa_cache.json')
+
+# Load cache
+ipa_cache = {}
+if os.path.exists(cache_path):
     try:
-        url = 'https://api.dictionaryapi.dev/api/v2/entries/en/' + urllib.parse.quote(clean)
+        with open(cache_path, 'r', encoding='utf-8') as f:
+            ipa_cache = json.load(f)
+    except:
+        pass
+
+def fetch_single_word_ipa(word):
+    if not word.strip(): return ''
+    try:
+        url = 'https://api.dictionaryapi.dev/api/v2/entries/en/' + urllib.parse.quote(word)
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=5) as response:
             data = json.loads(response.read().decode())
@@ -21,8 +33,35 @@ def get_ipa(word):
                         ipa = p['text']
                         break
             return ipa
+    except urllib.error.HTTPError as e:
+        if e.code == 429:
+            time.sleep(1) # wait if rate limited
     except Exception:
-        return ''
+        pass
+    return ''
+
+def get_ipa(word):
+    clean = word.split('/')[0].strip()
+    clean = clean.replace('[', '').replace(']', '')
+    
+    if clean in ipa_cache:
+        return ipa_cache[clean]
+
+    # if it's a phrase, try to get IPA for each word
+    parts = clean.split()
+    ipas = []
+    for p in parts:
+        ipa = fetch_single_word_ipa(p)
+        if ipa:
+            ipas.append(ipa)
+        else:
+            ipas.append(p) # fallback to word if no ipa
+            
+    result_ipa = ' '.join(ipas)
+    ipa_cache[clean] = result_ipa
+    
+    # Save cache periodically or let main thread save it
+    return result_ipa
 
 tags_keywords = {
     'Tech': ['程式', '電腦', '系統', '資料', '網路', '技術', '科技', '研發', '機器', '人工智慧', '晶片', '裝置', '軟體', '硬體', '伺服器', '雲端', '安全', 'AI', '架構', '網路安全', '虛擬', '數位', '自動化', '演算法'],
@@ -31,7 +70,6 @@ tags_keywords = {
 }
 
 def assign_tags(row):
-    # row 含有英文單字、英文例句、詞性與翻譯、例句翻譯
     text_to_check = " ".join(row[:4])
     assigned = []
     for tag, keywords in tags_keywords.items():
@@ -43,7 +81,6 @@ def assign_tags(row):
     
     return ','.join(assigned[:2])
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(script_dir, 'words.csv')
 html_path = os.path.join(script_dir, 'words.html')
 
@@ -64,28 +101,30 @@ except FileNotFoundError:
     exit(1)
 
 def process_row(row):
-    # Ensure row has 6 columns
     while len(row) < 5:
         row.append('')
     while len(row) < 6:
         row.append('')
         
-    # Get IPA if missing (only affects memory, not words.csv)
     if not row[4].strip():
+        # sleep slightly to avoid aggressive rate limiting
+        time.sleep(0.1)
         row[4] = get_ipa(row[0])
         
-    # Assign tags
     if not row[5].strip():
         row[5] = assign_tags(row)
         
     return row
 
 print("正在處理音標與分類標籤...")
-# 使用多執行緒加速音標查詢
-with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+# max_workers 降到 3，避免 API Rate Limit
+with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
     updated_rows = list(executor.map(process_row, rows))
 
-# 轉換為 CSV 字串
+# Save cache
+with open(cache_path, 'w', encoding='utf-8') as f:
+    json.dump(ipa_cache, f, ensure_ascii=False, indent=2)
+
 output = io.StringIO()
 writer = csv.writer(output)
 writer.writerow(header)
