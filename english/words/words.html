@@ -9,7 +9,7 @@
             -webkit-tap-highlight-color: transparent;
             margin: 0;
             padding: 0;
-            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%); /* 深色漸層背景 */
+            background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%); /* 暮色紫藍漸層背景 */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
@@ -686,14 +686,14 @@ juror,A juror must remain impartial throughout the trial.,n. 陪審員,陪審員
 
         const stateTitles = ["1", "2", "3", "4"];
         
-        // 柔和的卡片背景顏色，每次換單字時循環使用
+        // 柔和的卡片多色漸層背景，每次換單字時循環使用
         const cardBgColors = [
-            "#fdf1d4", // 暖黃
-            "#e6f4ea", // 薄荷綠
-            "#e8f0fe", // 淺藍
-            "#fce8e6", // 淺粉
-            "#f3e8fd", // 淺紫
-            "#ffe8d6"  // 柔和橘
+            "linear-gradient(135deg, #fff1eb 0%, #ace0f9 100%)", // 粉橘到水藍
+            "linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)", // 淡紫到粉藍
+            "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)", // 薄荷到淡粉
+            "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)", // 珍珠灰白
+            "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)", // 淺霧藍灰
+            "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)"  // 蜜桃漸層
         ];
 
         function parseCSV(str) {
@@ -867,7 +867,7 @@ juror,A juror must remain impartial throughout the trial.,n. 陪審員,陪審員
             }
 
             // 根據單字索引更換卡片背景顏色
-            cardElement.style.backgroundColor = cardBgColors[currentWordIdx % cardBgColors.length];
+            cardElement.style.background = cardBgColors[currentWordIdx % cardBgColors.length];
 
             // 字體粗細與對齊設定
             cardContent.style.fontWeight = currentStateIdx === 0 ? "bold" : "normal";
