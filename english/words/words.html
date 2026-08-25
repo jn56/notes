@@ -760,8 +760,12 @@ juror,A juror must remain impartial throughout the trial.,n. 陪審員,陪審員
             // 清空舊內容
             cardContent.innerHTML = '';
             
+            function escapeHTML(str) {
+                return str.replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag] || tag));
+            }
+
             // 輔助函數：將文字以 div 方式附加，若有多行則套用小圓點與縮排對齊
-            function appendLines(container, text, color, forceNoBullet = false) {
+            function appendLines(container, text, color, forceNoBullet = false, highlightWord = null) {
                 text = text.trim();
                 const lines = text.split('\n').filter(line => line.trim() !== '');
                 // 如果文字超過一行，且沒有強制關閉符號，則加上小圓點
@@ -770,6 +774,17 @@ juror,A juror must remain impartial throughout the trial.,n. 陪審員,陪審員
                 lines.forEach(line => {
                     const div = document.createElement('div');
                     div.style.color = color;
+                    
+                    let htmlContent = escapeHTML(line.trim());
+                    if (highlightWord) {
+                        const cleanWord = highlightWord.split('/')[0].trim();
+                        const pattern = cleanWord.includes(' ') 
+                            ? cleanWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                            : cleanWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "(?:s|es|d|ed|ing|ly)?";
+                        const regex = new RegExp(`\\b(${pattern})\\b`, 'gi');
+                        htmlContent = htmlContent.replace(regex, `<span style="color: #e53e3e; font-weight: bold;">$1</span>`);
+                    }
+
                     if (useBullet) {
                         // 使用 Flexbox 確保小圓點和多行文字完美對齊
                         div.style.display = "flex";
@@ -780,18 +795,18 @@ juror,A juror must remain impartial throughout the trial.,n. 陪審員,陪審員
                         }
                         
                         const bullet = document.createElement('span');
-                        bullet.textContent = '•';
+                        bullet.innerHTML = '&bull;';
                         bullet.style.marginRight = '0.5em'; // 圓點與文字的間距
                         bullet.style.flexShrink = '0'; // 防止圓點被壓縮
                         
                         const txt = document.createElement('span');
-                        txt.textContent = line.trim();
+                        txt.innerHTML = htmlContent;
                         txt.style.textAlign = "left"; // 確保換行後的文字靠左對齊
                         
                         div.appendChild(bullet);
                         div.appendChild(txt);
                     } else {
-                        div.textContent = line.trim();
+                        div.innerHTML = htmlContent;
                     }
                     container.appendChild(div);
                 });
@@ -818,7 +833,7 @@ juror,A juror must remain impartial throughout the trial.,n. 陪審員,陪審員
             if (currentStateIdx === 0) {
                 displayWordWithIPA(item[0], item[4]);
             } else if (currentStateIdx === 1) {
-                appendLines(cardContent, item[1], engColor);
+                appendLines(cardContent, item[1], engColor, false, item[0]);
             } else if (currentStateIdx === 2) {
                 displayWordWithIPA(item[0], item[4]);
                 
@@ -828,7 +843,7 @@ juror,A juror must remain impartial throughout the trial.,n. 陪審員,陪審員
                 
                 appendLines(cardContent, item[2], chtColor);
             } else if (currentStateIdx === 3) {
-                appendLines(cardContent, item[1], engColor);
+                appendLines(cardContent, item[1], engColor, false, item[0]);
                 
                 const gap = document.createElement('div');
                 gap.style.height = "1em";
