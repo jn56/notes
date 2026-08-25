@@ -32,7 +32,8 @@
             background: white;
             border-radius: 15px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.06); /* 更柔和的陰影 */
-            transition: background-color 0.4s ease; /* 增加背景顏色漸變效果 */
+            transition: background 0.4s ease, transform 0.15s ease-in-out; /* 增加背景顏色與翻轉漸變效果 */
+            transform-style: preserve-3d; /* 支援 3D 翻轉效果 */
             display: none;
             flex-direction: column;
             align-items: center;
@@ -934,55 +935,92 @@ juror,A juror must remain impartial throughout the trial.,n. 陪審員,陪審員
             reader.readAsText(file);
         });
 
+        let isAnimating = false;
+        
+        function animateCard(direction, stateChangeCallback) {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            const card = document.getElementById('card');
+            
+            // 開始向外翻轉 (設定 transition 與角度)
+            card.style.transition = 'background 0.4s ease, transform 0.15s ease-in';
+            card.style.transform = `perspective(1000px) rotateY(${direction === 'next' ? -90 : 90}deg)`;
+            
+            setTimeout(() => {
+                // 卡片翻轉到側邊時，更新內容
+                stateChangeCallback();
+                render();
+                
+                // 瞬間把卡片切到另一側準備向內翻轉
+                card.style.transition = 'none';
+                card.style.transform = `perspective(1000px) rotateY(${direction === 'next' ? 90 : -90}deg)`;
+                
+                // 強制瀏覽器重繪
+                void card.offsetWidth;
+                
+                // 開始向內翻轉
+                card.style.transition = 'background 0.4s ease, transform 0.15s ease-out';
+                card.style.transform = 'perspective(1000px) rotateY(0deg)';
+                
+                setTimeout(() => {
+                    isAnimating = false;
+                }, 150);
+            }, 150);
+        }
+
         let randomHistory = [];
 
         function nextPage() {
-            if (wordsData.length === 0) return;
+            if (wordsData.length === 0 || isAnimating) return;
             const isRandom = document.getElementById('random-switch').checked;
             
-            if (currentStateIdx < 3) {
-                currentStateIdx++;
-            } else {
-                if (isRandom) {
-                    randomHistory.push(currentWordIdx); // 記錄歷史，以便上一頁能返回
-                    currentWordIdx = Math.floor(Math.random() * wordsData.length);
-                    currentStateIdx = 0;
+            let willUpdate = true;
+            if (currentStateIdx === 3 && !isRandom && currentWordIdx >= wordsData.length - 1) {
+                willUpdate = false;
+            }
+            if (!willUpdate) return;
+
+            animateCard('next', () => {
+                if (currentStateIdx < 3) {
+                    currentStateIdx++;
                 } else {
-                    if (currentWordIdx < wordsData.length - 1) {
-                        currentWordIdx++;
+                    if (isRandom) {
+                        randomHistory.push(currentWordIdx); // 記錄歷史，以便上一頁能返回
+                        currentWordIdx = Math.floor(Math.random() * wordsData.length);
                         currentStateIdx = 0;
                     } else {
-                        return; 
+                        currentWordIdx++;
+                        currentStateIdx = 0;
                     }
                 }
-            }
-            render();
+            });
         }
 
         function prevPage() {
-            if (wordsData.length === 0) return;
+            if (wordsData.length === 0 || isAnimating) return;
             const isRandom = document.getElementById('random-switch').checked;
 
-            if (currentStateIdx > 0) {
-                currentStateIdx--;
-            } else {
-                if (isRandom) {
-                    if (randomHistory.length > 0) {
+            let willUpdate = true;
+            if (currentStateIdx === 0) {
+                if (isRandom && randomHistory.length === 0) willUpdate = false;
+                if (!isRandom && currentWordIdx === 0) willUpdate = false;
+            }
+            if (!willUpdate) return;
+
+            animateCard('prev', () => {
+                if (currentStateIdx > 0) {
+                    currentStateIdx--;
+                } else {
+                    if (isRandom) {
                         currentWordIdx = randomHistory.pop();
                         currentStateIdx = 3;
                     } else {
-                        return; // 如果沒有歷史紀錄，就停在第一頁不動
-                    }
-                } else {
-                    if (currentWordIdx > 0) {
                         currentWordIdx--;
                         currentStateIdx = 3;
-                    } else {
-                        return;
                     }
                 }
-            }
-            render();
+            });
         }
 
         document.addEventListener('keydown', (e) => {
