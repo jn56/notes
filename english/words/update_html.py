@@ -111,16 +111,39 @@ except FileNotFoundError:
     print("找不到 words.csv，請確認檔案是否存在。")
     exit(1)
 
+# Extract existing IPAs from words.html to avoid refetching
+existing_ipas = {}
+try:
+    with open(html_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+        start_marker = "/*CSV_START*/"
+        end_marker = "/*CSV_END*/"
+        start_idx = html_content.find(start_marker)
+        end_idx = html_content.find(end_marker)
+        if start_idx != -1 and end_idx != -1:
+            csv_str = html_content[start_idx + len(start_marker):end_idx].strip()
+            import io
+            for r in csv.reader(io.StringIO(csv_str)):
+                if len(r) >= 5 and r[4].strip():
+                    existing_ipas[r[0]] = r[4].strip()
+except Exception:
+    pass
+
 def process_row(row):
+    # Ensure row has 6 columns
     while len(row) < 5:
         row.append('')
     while len(row) < 6:
         row.append('')
         
+    if not row[4].strip() and row[0] in existing_ipas:
+        row[4] = existing_ipas[row[0]]
+        
+    # Get IPA if missing (only affects memory, not words.csv)
     if not row[4].strip():
-        time.sleep(0.5) # slow down overall to be nice to the API
         row[4] = get_ipa(row[0])
         
+    # Assign tags
     if not row[5].strip():
         row[5] = assign_tags(row)
         
