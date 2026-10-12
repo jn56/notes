@@ -1462,8 +1462,8 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
             // 建立模擬 Kindle 電子紙刷頁交界處的掃描過渡線
             const sweepLine = document.createElement('div');
             sweepLine.className = 'kindle-sweep-line';
-            sweepLine.style.left = direction === 'next' ? '0%' : '100%';
-            if (direction === 'prev') {
+            sweepLine.style.left = direction === 'next' ? '100%' : '0%';
+            if (direction === 'next') {
                 sweepLine.style.transform = 'translateX(-50%) scaleX(-1)';
             }
             
@@ -1478,18 +1478,18 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
             // 強制瀏覽器重繪，確保初始遮罩位置生效
             void wrapper.offsetWidth;
             
-            // 啟動漸進刷頁動畫：next 由左到右揭露新頁，prev 由右到左揭露新頁
+            // 啟動漸進刷頁動畫：next 由右到左揭露新頁，prev 由左到右揭露新頁
             const duration = 340;
             const easing = 'cubic-bezier(0.4, 0, 0.2, 1)';
             oldCard.style.transition = `clip-path ${duration}ms ${easing}`;
             sweepLine.style.transition = `left ${duration}ms ${easing}`;
             
             if (direction === 'next') {
-                oldCard.style.clipPath = 'inset(0 0% 0 100%)';
-                sweepLine.style.left = '100%';
-            } else {
                 oldCard.style.clipPath = 'inset(0 100% 0 0%)';
                 sweepLine.style.left = '0%';
+            } else {
+                oldCard.style.clipPath = 'inset(0 0% 0 100%)';
+                sweepLine.style.left = '100%';
             }
             
             setTimeout(() => {
