@@ -32,8 +32,6 @@
             background: white;
             border-radius: 15px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.06); /* 更柔和的陰影 */
-            transition: background 0.4s ease, transform 0.15s ease-in-out; /* 增加背景顏色與翻轉漸變效果 */
-            transform-style: preserve-3d; /* 支援 3D 翻轉效果 */
             display: none;
             flex-direction: column;
             align-items: center;
@@ -44,6 +42,38 @@
             position: relative;
             cursor: pointer;
             user-select: none; /* 防止快速點擊時反白文字 */
+        }
+        .kindle-wipe-wrapper {
+            position: absolute;
+            inset: 0;
+            border-radius: 15px;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .card-wipe-overlay {
+            position: absolute !important;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: none !important;
+            margin: 0;
+            pointer-events: none;
+        }
+        .kindle-sweep-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 28px;
+            transform: translateX(-50%);
+            background: linear-gradient(to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.75) 45%,
+                rgba(0, 0, 0, 0.07) 55%,
+                rgba(255, 255, 255, 0) 100%);
+            pointer-events: none;
+            z-index: 2;
         }
         .title {
             position: absolute;
@@ -1416,31 +1446,56 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
             isAnimating = true;
             
             const card = document.getElementById('card');
+            const container = card.parentElement;
             
-            // 開始向外翻轉 (設定 transition 與角度)
-            card.style.transition = 'background 0.4s ease, transform 0.15s ease-in';
-            card.style.transform = `perspective(1000px) rotateY(${direction === 'next' ? -90 : 90}deg)`;
+            // 建立外層遮罩容器，確保刷頁動畫與掃描線不會超出卡片圓角
+            const wrapper = document.createElement('div');
+            wrapper.className = 'kindle-wipe-wrapper';
+            
+            // 複製當前卡片作為「舊頁面」覆蓋在上方
+            const oldCard = card.cloneNode(true);
+            oldCard.removeAttribute('id');
+            oldCard.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+            oldCard.classList.add('card-wipe-overlay');
+            oldCard.style.clipPath = 'inset(0 0% 0 0%)';
+            
+            // 建立模擬 Kindle 電子紙刷頁交界處的掃描過渡線
+            const sweepLine = document.createElement('div');
+            sweepLine.className = 'kindle-sweep-line';
+            sweepLine.style.left = direction === 'next' ? '0%' : '100%';
+            if (direction === 'prev') {
+                sweepLine.style.transform = 'translateX(-50%) scaleX(-1)';
+            }
+            
+            wrapper.appendChild(oldCard);
+            wrapper.appendChild(sweepLine);
+            container.appendChild(wrapper);
+            
+            // 底層真實卡片立即更新為「新頁面」內容
+            stateChangeCallback();
+            render();
+            
+            // 強制瀏覽器重繪，確保初始遮罩位置生效
+            void wrapper.offsetWidth;
+            
+            // 啟動漸進刷頁動畫：next 由左到右揭露新頁，prev 由右到左揭露新頁
+            const duration = 340;
+            const easing = 'cubic-bezier(0.4, 0, 0.2, 1)';
+            oldCard.style.transition = `clip-path ${duration}ms ${easing}`;
+            sweepLine.style.transition = `left ${duration}ms ${easing}`;
+            
+            if (direction === 'next') {
+                oldCard.style.clipPath = 'inset(0 0% 0 100%)';
+                sweepLine.style.left = '100%';
+            } else {
+                oldCard.style.clipPath = 'inset(0 100% 0 0%)';
+                sweepLine.style.left = '0%';
+            }
             
             setTimeout(() => {
-                // 卡片翻轉到側邊時，更新內容
-                stateChangeCallback();
-                render();
-                
-                // 瞬間把卡片切到另一側準備向內翻轉
-                card.style.transition = 'none';
-                card.style.transform = `perspective(1000px) rotateY(${direction === 'next' ? 90 : -90}deg)`;
-                
-                // 強制瀏覽器重繪
-                void card.offsetWidth;
-                
-                // 開始向內翻轉
-                card.style.transition = 'background 0.4s ease, transform 0.15s ease-out';
-                card.style.transform = 'perspective(1000px) rotateY(0deg)';
-                
-                setTimeout(() => {
-                    isAnimating = false;
-                }, 150);
-            }, 150);
+                wrapper.remove();
+                isAnimating = false;
+            }, duration);
         }
 
         let randomHistory = [];
