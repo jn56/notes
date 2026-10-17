@@ -163,6 +163,10 @@
             margin: 0;
             pointer-events: none;
         }
+        .card-wipe-overlay::before,
+        .card-wipe-overlay::after {
+            display: none !important;
+        }
         .kindle-sweep-line {
             position: absolute;
             top: 0;
@@ -1820,6 +1824,7 @@ nonetheless,"The optimization was complex to implement; nonetheless, the 30% spe
         <div class="controls-row">
             <label class="switch-label mode-switch"><input type="checkbox" id="auto-switch"><span class="switch-dot"></span>Auto</label>
             <label class="switch-label mode-switch"><input type="checkbox" id="random-switch"><span class="switch-dot"></span>Rand</label>
+            <label class="switch-label mode-switch"><input type="checkbox" id="ereader-switch"><span class="switch-dot"></span>E-Reader</label>
         </div>
         <div class="controls-divider"></div>
         <div class="controls-row">
@@ -2154,24 +2159,55 @@ nonetheless,"The optimization was complex to implement; nonetheless, the 30% spe
             
             const card = document.getElementById('card');
             const container = card.parentElement;
+            const isEReader = document.getElementById('ereader-switch') && document.getElementById('ereader-switch').checked;
             
             // 建立外層遮罩容器，確保刷頁動畫與掃描線不會超出卡片圓角
             const wrapper = document.createElement('div');
             wrapper.className = 'kindle-wipe-wrapper';
             
-            // 複製當前卡片作為「舊頁面」覆蓋在上方
+            // 複製當前卡片作為「舊頁面」覆蓋在最上方
             const oldCard = card.cloneNode(true);
             oldCard.removeAttribute('id');
             oldCard.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
             oldCard.classList.add('card-wipe-overlay');
             oldCard.style.clipPath = 'inset(0 0% 0 0%)';
+            oldCard.style.zIndex = '3';
             
             // 建立模擬 Kindle 電子紙刷頁交界處的掃描過渡線
             const sweepLine = document.createElement('div');
             sweepLine.className = 'kindle-sweep-line';
-            sweepLine.style.left = direction === 'next' ? '100%' : '0%';
+            sweepLine.style.zIndex = '4';
+            const startLeft = direction === 'next' ? '100%' : '0%';
+            const endLeft = direction === 'next' ? '0%' : '100%';
+            const endClip = direction === 'next' ? 'inset(0 100% 0 0%)' : 'inset(0 0% 0 100%)';
+
+            sweepLine.style.left = startLeft;
             if (direction === 'next') {
                 sweepLine.style.transform = 'translateX(-50%) scaleX(-1)';
+            }
+
+            // 若開啟 E-Reader 模式，中間夾一層全白單字卡與第二道掃描線
+            let blankCard = null;
+            let sweepLine2 = null;
+            if (isEReader) {
+                blankCard = document.createElement('div');
+                blankCard.className = 'card card-wipe-overlay';
+                blankCard.style.display = 'flex';
+                blankCard.style.background = '#ffffff';
+                blankCard.style.clipPath = 'inset(0 0% 0 0%)';
+                blankCard.style.zIndex = '1';
+
+                sweepLine2 = document.createElement('div');
+                sweepLine2.className = 'kindle-sweep-line';
+                sweepLine2.style.zIndex = '2';
+                sweepLine2.style.left = startLeft;
+                sweepLine2.style.opacity = '0';
+                if (direction === 'next') {
+                    sweepLine2.style.transform = 'translateX(-50%) scaleX(-1)';
+                }
+
+                wrapper.appendChild(blankCard);
+                wrapper.appendChild(sweepLine2);
             }
             
             wrapper.appendChild(oldCard);
@@ -2185,24 +2221,53 @@ nonetheless,"The optimization was complex to implement; nonetheless, the 30% spe
             // 強制瀏覽器重繪，確保初始遮罩位置生效
             void wrapper.offsetWidth;
             
-            // 啟動漸進刷頁動畫：next 由右到左揭露新頁，prev 由左到右揭露新頁
-            const duration = 340;
             const easing = 'cubic-bezier(0.4, 0, 0.2, 1)';
-            oldCard.style.transition = `clip-path ${duration}ms ${easing}`;
-            sweepLine.style.transition = `left ${duration}ms ${easing}`;
-            
-            if (direction === 'next') {
-                oldCard.style.clipPath = 'inset(0 100% 0 0%)';
-                sweepLine.style.left = '0%';
+
+            if (!isEReader) {
+                // 一般模式：單次刷頁動畫
+                const duration = 340;
+                oldCard.style.transition = `clip-path ${duration}ms ${easing}`;
+                sweepLine.style.transition = `left ${duration}ms ${easing}`;
+                
+                oldCard.style.clipPath = endClip;
+                sweepLine.style.left = endLeft;
+                
+                setTimeout(() => {
+                    wrapper.remove();
+                    isAnimating = false;
+                }, duration);
             } else {
-                oldCard.style.clipPath = 'inset(0 0% 0 100%)';
-                sweepLine.style.left = '100%';
+                // E-Reader 模式：兩道刷頁平行重疊進行（第一道尚未結束，第二道即開始跟進）
+                const passDuration = 340;
+                const overlapDelay = 30; // 第一道進行 30ms 時，第二道立即啟動
+
+                // 第一道刷頁立即啟動：舊卡片 -> 全白單字卡
+                oldCard.style.transition = `clip-path ${passDuration}ms ${easing}`;
+                sweepLine.style.transition = `left ${passDuration}ms ${easing}`;
+                oldCard.style.clipPath = endClip;
+                sweepLine.style.left = endLeft;
+
+                // 第一道還沒結束時，平行啟動第二道刷頁：全白單字卡 -> 完整新卡片內容
+                setTimeout(() => {
+                    sweepLine2.style.opacity = '1';
+                    blankCard.style.transition = `clip-path ${passDuration}ms ${easing}`;
+                    sweepLine2.style.transition = `left ${passDuration}ms ${easing}`;
+                    blankCard.style.clipPath = endClip;
+                    sweepLine2.style.left = endLeft;
+                }, overlapDelay);
+
+                // 第一道結束時移除第一層舊卡與第一道掃描線
+                setTimeout(() => {
+                    oldCard.remove();
+                    sweepLine.remove();
+                }, passDuration);
+
+                // 第二道結束時清理整個遮罩容器
+                setTimeout(() => {
+                    wrapper.remove();
+                    isAnimating = false;
+                }, overlapDelay + passDuration);
             }
-            
-            setTimeout(() => {
-                wrapper.remove();
-                isAnimating = false;
-            }, duration);
         }
 
         let randomHistory = [];
