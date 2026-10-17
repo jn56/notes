@@ -4,34 +4,101 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>單字卡 (Words Flashcards)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-deep: #0f172a;
+            --bg-mid: #1e1b4b;
+            --bg-warm: #311042;
+            --glass-bg: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.14);
+            --glass-hover: rgba(255, 255, 255, 0.13);
+            --text-eng: #0f172a;
+            --text-cht: #1e40af;
+            --text-ipa: #64748b;
+            --accent-highlight: #dc2626;
+            --accent-highlight-bg: rgba(220, 38, 38, 0.08);
+        }
+
         body {
             -webkit-tap-highlight-color: transparent;
             margin: 0;
             padding: 0;
-            background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%); /* 暮色紫藍漸層背景 */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at 18% 18%, rgba(99, 102, 241, 0.25) 0%, transparent 45%),
+                        radial-gradient(circle at 82% 82%, rgba(236, 72, 153, 0.18) 0%, transparent 45%),
+                        linear-gradient(135deg, #0f172a 0%, #1e1b4b 52%, #2e1065 100%);
+            font-family: 'Inter', 'Noto Sans TC', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
+            overflow: hidden;
             touch-action: manipulation; /* 停用點擊兩下放大，提升手機操作手感 */
+            position: relative;
         }
+
+        /* 背景環境微光裝飾 */
+        body::before {
+            content: "";
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+            top: -140px;
+            right: -100px;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: "";
+            position: absolute;
+            width: 480px;
+            height: 480px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.12) 0%, transparent 70%);
+            bottom: -140px;
+            left: -100px;
+            pointer-events: none;
+        }
+
+        /* 維持原本單字卡容器大小 */
         .card-container {
             width: 800px;
             max-width: 90%;
             height: 60vh;
             min-height: 300px;
             position: relative;
+            z-index: 2;
         }
+
+        /* 卡片底部堆疊層次感 */
+        .card-container::before {
+            content: "";
+            position: absolute;
+            inset: 10px 18px -8px 18px;
+            background: rgba(255, 255, 255, 0.18);
+            border-radius: 16px;
+            filter: blur(1px);
+            z-index: -1;
+            pointer-events: none;
+            transition: transform 0.3s ease;
+        }
+
+        /* 維持原本單字卡尺寸與內距 */
         .card {
             -webkit-tap-highlight-color: transparent;
             width: 100%;
             height: 100%;
             background: white;
             border-radius: 15px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.06); /* 更柔和的陰影 */
+            box-shadow: 0 24px 60px rgba(2, 6, 23, 0.45),
+                        0 6px 16px rgba(2, 6, 23, 0.2),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.65);
             display: none;
             flex-direction: column;
             align-items: center;
@@ -42,7 +109,42 @@
             position: relative;
             cursor: pointer;
             user-select: none; /* 防止快速點擊時反白文字 */
+            overflow: hidden;
         }
+
+        /* 左右側翻頁微光提示 (僅電腦版懸停顯示) */
+        @media (hover: hover) and (min-width: 601px) {
+            .card::before,
+            .card::after {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 20px;
+                font-weight: 600;
+                color: rgba(100, 116, 139, 0.22);
+                pointer-events: none;
+                transition: opacity 0.25s ease, transform 0.25s ease, color 0.25s ease;
+                opacity: 0;
+            }
+            .card::before {
+                content: "‹";
+                left: 22px;
+            }
+            .card::after {
+                content: "›";
+                right: 22px;
+            }
+            .card:hover::before {
+                opacity: 1;
+                transform: translate(-3px, -50%);
+            }
+            .card:hover::after {
+                opacity: 1;
+                transform: translate(3px, -50%);
+            }
+        }
+
+        /* Kindle 刷頁特效樣式（完整保留） */
         .kindle-wipe-wrapper {
             position: absolute;
             inset: 0;
@@ -75,114 +177,375 @@
             pointer-events: none;
             z-index: 2;
         }
+
+        /* 左上角階段膠囊與自動倒數計時 */
         .title {
             position: absolute;
-            top: 15px;
-            left: 15px;
-            color: #888;
-            font-size: 14px;
-            font-weight: bold;
+            top: 20px;
+            left: 24px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            background: rgba(255, 255, 255, 0.68);
+            backdrop-filter: blur(8px);
+            padding: 5px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
         }
+
+        .state-dot-badge {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #6366f1;
+            display: inline-block;
+        }
+
+        /* 底部進度與分頁點指示器 */
         .progress {
             position: absolute;
-            bottom: 15px;
-            color: #aaa;
-            font-size: 14px;
+            bottom: 18px;
+            left: 24px;
+            right: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 500;
+            pointer-events: none;
         }
+
+        .progress-count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            color: #64748b;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 3px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(15, 23, 42, 0.05);
+        }
+
+        .step-dots {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .step-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: rgba(100, 116, 139, 0.25);
+            transition: all 0.25s ease;
+        }
+
+        .step-dot.active {
+            width: 22px;
+            background: #4f46e5;
+        }
+
+        .step-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+            min-width: 58px;
+            text-align: right;
+        }
+
+        /* 卡片最底端細進度條 */
+        .bottom-progress-track {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: rgba(15, 23, 42, 0.05);
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bottom-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
+            transition: width 0.3s ease;
+        }
+
         .content {
             font-size: 32px;
-            color: #333;
+            color: var(--text-eng);
             line-height: 1.5;
             white-space: pre-line;
             word-break: break-word;
             width: 100%;
+            letter-spacing: -0.015em;
         }
-        .instructions {
-            margin-top: 20px;
-            color: #e2e8f0;
-            font-size: 14px;
-            text-align: center;
-            padding: 0 10px;
-            line-height: 1.6;
+
+        /* 音標膠囊樣式 */
+        .ipa-badge {
+            display: inline-block;
+            font-family: 'JetBrains Mono', 'Segoe UI', monospace;
+            color: var(--text-ipa);
+            font-size: 0.48em;
+            font-weight: 500;
+            margin-top: 12px;
+            padding: 4px 14px;
+            background: rgba(15, 23, 42, 0.045);
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            border-radius: 999px;
+            letter-spacing: 0.02em;
         }
-                
-        
-        /* ensure the container centers items if they fit */
-        @media (min-width: 600px) {
-            
+
+        /* 詞性小標籤 */
+        .pos-badge {
+            display: inline-block;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.65em;
+            font-weight: 700;
+            color: #4338ca;
+            background: rgba(79, 70, 229, 0.1);
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            padding: 2px 9px;
+            border-radius: 8px;
+            margin-right: 10px;
+            vertical-align: middle;
+            letter-spacing: 0.02em;
         }
-                        .controls-wrapper {
+
+        /* 例句關鍵字高亮 */
+        .kw-highlight {
+            color: var(--accent-highlight);
+            background: var(--accent-highlight-bg);
+            padding: 1px 6px;
+            border-radius: 6px;
+            font-weight: 700;
+            box-decoration-break: clone;
+            -webkit-box-decoration-break: clone;
+        }
+
+        /* 中英分隔線 */
+        .content-divider {
+            height: 1px;
+            width: 68%;
+            margin: 20px auto;
+            background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.12), transparent);
+        }
+
+        /* 右上角分類標籤與發音按鈕 */
+        .card-top-right {
             position: absolute;
-            top: 30px; /* moved down slightly from 15px */
+            top: 18px;
+            right: 22px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 3;
+        }
+
+        .tag-pill {
+            padding: 4px 11px;
+            border-radius: 999px;
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(15, 23, 42, 0.07);
+            box-shadow: 0 2px 5px rgba(15, 23, 42, 0.04);
+        }
+        .tag-pill.tag-Tech {
+            background: rgba(224, 242, 254, 0.85);
+            color: #0369a1;
+            border-color: rgba(14, 165, 233, 0.2);
+        }
+        .tag-pill.tag-Economy {
+            background: rgba(254, 243, 199, 0.85);
+            color: #b45309;
+            border-color: rgba(245, 158, 11, 0.22);
+        }
+        .tag-pill.tag-Global {
+            background: rgba(243, 232, 255, 0.85);
+            color: #7e22ce;
+            border-color: rgba(168, 85, 247, 0.2);
+        }
+        .tag-pill.tag-Life {
+            background: rgba(220, 252, 231, 0.85);
+            color: #15803d;
+            border-color: rgba(34, 197, 94, 0.2);
+        }
+
+        .speak-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: rgba(255, 255, 255, 0.75);
+            color: #334155;
+            cursor: pointer;
+            padding: 0;
+            box-shadow: 0 2px 5px rgba(15, 23, 42, 0.05);
+            transition: all 0.2s ease;
+        }
+        .speak-btn:hover {
+            background: #ffffff;
+            color: #4f46e5;
+            transform: scale(1.06);
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.15);
+        }
+        .speak-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 頂部控制列：毛玻璃膠囊底座 */
+        .controls-wrapper {
+            position: absolute;
+            top: 24px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 10;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
-            gap: 8px;
-            width: 100%;
+            justify-content: center;
+            gap: 10px;
+            padding: 7px 12px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 999px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            max-width: 94vw;
         }
+
         .controls-row {
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            width: 100%;
-            max-width: 95vw;
-            overflow-x: auto;
+            gap: 6px;
             white-space: nowrap;
             scrollbar-width: none;
         }
         .controls-row::-webkit-scrollbar {
             display: none;
         }
-        @media (min-width: 600px) {
-            .controls-row { justify-content: center; }
+
+        .controls-divider {
+            width: 1px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.16);
+            margin: 0 2px;
+            flex-shrink: 0;
         }
+
         .switch-label {
-            display: flex;
+            display: inline-flex;
             align-items: center;
+            gap: 6px;
             cursor: pointer;
             user-select: none;
-            background: #e2e8f0; /* Default off color */
-            color: #4a5568;
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(226, 232, 240, 0.78);
             padding: 6px 14px;
-            border-radius: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-radius: 999px;
+            border: 1px solid transparent;
             white-space: nowrap;
-            font-size: 14px;
-            font-weight: bold;
-            transition: all 0.2s ease;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        .switch-label:hover {
+            background: var(--glass-hover);
+            color: #ffffff;
+        }
+
         .switch-label input[type="checkbox"] {
             display: none;
         }
+
+        .switch-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(148, 163, 184, 0.45);
+            transition: all 0.2s ease;
+        }
+
+        /* 啟用狀態 */
         .switch-label:has(input:checked) {
-            background: #4299e1; /* Blue when on */
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(79, 70, 229, 0.9) 100%);
             color: #ffffff;
-            box-shadow: 0 4px 6px rgba(66,153,225,0.3);
+            border-color: rgba(165, 180, 252, 0.35);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
         }
-        .switch-label input {
-            margin-right: 8px;
-            cursor: pointer;
-            width: 18px;
-            height: 18px;
+
+        .switch-label.mode-switch:has(input:checked) {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.92) 0%, rgba(217, 119, 6, 0.92) 100%);
+            border-color: rgba(253, 230, 138, 0.4);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
         }
+
+        .switch-label:has(input:checked) .switch-dot {
+            background: #ffffff;
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.9);
+        }
+
+        /* 底部操作說明列 */
+        .instructions {
+            margin-top: 24px;
+            color: rgba(226, 232, 240, 0.75);
+            font-size: 13px;
+            text-align: center;
+            padding: 8px 18px;
+            line-height: 1.6;
+            background: rgba(15, 23, 42, 0.35);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            z-index: 2;
+        }
+
+        .kbd-key {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom-width: 2px;
+            padding: 1px 6px;
+            border-radius: 5px;
+            margin: 0 2px;
+        }
+
         #file-picker-container {
             display: none;
-            background: white;
-            padding: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            padding: 36px;
             border-radius: 15px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
             text-align: center;
             width: 100%;
             box-sizing: border-box;
         }
         #file-picker-container h2 {
             margin-top: 0;
-            color: #333;
+            color: #0f172a;
             font-size: 20px;
         }
         input[type="file"] {
@@ -190,20 +553,60 @@
             font-size: 16px;
             max-width: 100%;
         }
-        /* 手機版適配：當螢幕寬度小於 600px 時縮小字體 */
-                @media (max-width: 600px) {
+
+        /* 手機版適配：當螢幕寬度小於 600px 時縮小字體與調整頂部控制列 */
+        @media (max-width: 600px) {
             body {
-            -webkit-tap-highlight-color: transparent;
+                -webkit-tap-highlight-color: transparent;
                 justify-content: flex-start;
-                padding-top: 130px;
+                padding-top: 125px;
+            }
+            .controls-wrapper {
+                top: 16px;
+                flex-direction: column;
+                gap: 6px;
+                padding: 8px 10px;
+                border-radius: 20px;
+                background: rgba(15, 23, 42, 0.55);
+            }
+            .controls-divider {
+                display: none;
+            }
+            .switch-label {
+                padding: 5px 11px;
+                font-size: 12px;
             }
             .card {
-            -webkit-tap-highlight-color: transparent;
+                -webkit-tap-highlight-color: transparent;
                 padding: 20px 15px; /* 手機版單字卡小一點 */
                 min-height: 250px;
             }
-            .title, .progress {
+            .title {
+                top: 14px;
+                left: 14px;
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+            .card-top-right {
+                top: 13px;
+                right: 14px;
+                gap: 6px;
+            }
+            .progress {
+                bottom: 12px;
+                left: 14px;
+                right: 14px;
+                font-size: 11.5px;
+            }
+            .instructions {
+                margin-top: 18px;
                 font-size: 12px;
+                padding: 6px 14px;
+                gap: 10px;
+                flex-wrap: wrap;
+                justify-content: center;
+                max-width: 88vw;
+                border-radius: 14px;
             }
         }
     </style>
@@ -213,8 +616,6 @@
     <!-- 這裡預留給 Python 腳本寫入 CSV 資料的區塊 -->
     <script type="text/template" id="csv-data">/*CSV_START*/
 英文單字,英文例句,單字詞性和中文翻譯,例句中文翻譯,音標,標籤
-
-drill,"a dentist's drill\nIn some of these schools, army-style drills are used to instil a sense of discipline.",n. 鑽子；訓練，演習,牙醫的電鑽\n在其中一些學校裡，軍事化的訓練被用來灌輸紀律觀念。,/dɹɪl/,Global
 
 instil,It is part of a teacher's job to instil confidence in/into his or her students.,v. 逐漸灌輸,逐漸向學生灌輸信心是教師工作的一部分。,/ɪnˈstɪl/,Life
 
@@ -238,7 +639,7 @@ complimentary,Our guests said some very complimentary things about the meal I'd 
 
 concatenate,The filename is a series of concatenated words with no spaces.,v. 連接，串聯,檔案名稱是一系列沒有空格的串聯單字。,/kənˈkæt.ə.neɪt/,Life
 
-conduct,We are conducting a survey to find out what our customers think of their local bus service.,v. 進行，實施,我們正在進行一項調查，以了解客戶對當地公車服務的看法。,/ˈkɒndʌkt/,Life
+conduct,We are conducting a survey to find out what our customers think of their local bus service.,v. 進行；執行，實施,我們正在進行一項調查，以了解客戶對當地公車服務的看法。,/ˈkɒndʌkt/,Life
 
 consent,They can't publish your name without your consent.,n. 同意,沒有你的同意，他們不能公開你的名字。,/kənˈsɛnt/,Life
 
@@ -252,27 +653,13 @@ devote,The report recommends that more resources be devoted to teaching four-yea
 
 devoted,Lucy is devoted to her cats.\nI'm devoted to help learners improve their English communication skills.,adj. 忠誠的，全心全意的,Lucy 對她的貓全心全意。\n我致力於幫助學習者提升他們的英語溝通技巧。,/dɪˈvəʊtəd/,Life
 
-etc.,"We saw lots of lions, tigers, elephants, etc.",adv. 等等,我們看到了很多獅子、老虎、大象等等。,,Life
-
 exhaustive,An exhaustive comparison is outside the scope of the paper.,adj. 徹底的，詳盡的,詳盡的比較超出了本論文的範圍。,/ɛɡˈzɔː.stɪv/,Life
 
 exhibit,He frequently exhibits at the art gallery.,n./v. 展覽品；展示,他經常在畫廊展出作品。,/ɛɡ-/,Life
 
-go over something,Remember to go over your essay for grammar and spelling mistakes before you hand it in to me.,phr. 仔細檢查,交給我之前，記得仔細檢查你的文章是否有文法和拼字錯誤。,/ɡəʉ/ /ˈəʊ.və(ɹ)/ /ˈsamθɪŋ/,Life
-
-gonna,My cousins and I are gonna visit our grandparents in Tainan.,(be) going to 的口語,我表兄弟和我打算去台南拜訪我們的祖父母。,,Life
-
-gotta,We gotta go now! The show will start in 30 minutes!,(have) got to 的口語,我們現在得走了！表演 30 分鐘後就要開始了！,,Life
-
-grocery,I went to the grocery to buy some fruit.\nI bought groceries for the family.,n. 食品雜貨店；食品雜貨,我去雜貨店買了一些水果。\n我為家裡買了些雜貨。,/ˈɡɹəʊs(ə)ɹi/,Life
-
 halt,"In distributed systems, failure of a single node does not necessarily halt the training process. Fault-tolerant frameworks can handle node failures and continue training, providing robustness.",v. 停止,在分散式系統中，單一節點的故障不一定會停止訓練過程。容錯框架可以處理節點故障並繼續訓練，提供穩健性。,/hɔːlt/,Tech
 
-hand something in,I've decided to hand in my resignation.,phr. 繳交,我決定遞交辭呈。,/hænd/ /ˈsamθɪŋ/ /ɪn/,Life
-
-handy,It's a nice house and it's handy for the train station.,adj. 方便的，有用的,這是一棟好房子，而且離火車站很近（很方便）。,/ˈhæn.di/,Life
-
-inevitable,"Sometimes, skewed processing speeds are inevitable due to, e.g., network delays, resource contentions, or unpredictable workload spikes.",adj. 不可避免的,有時候，處理速度的偏差是不可避免的，例如因為網路延遲、資源競爭或不可預測的負載激增。,/ɪnˈɛvɪtəbəl/,Tech
+inevitable,"Sometimes, skewed processing speeds are inevitable due to, e.g., network delays, resource contentions, or unpredictable workload spikes.",adj. 無可避免的，不可避免的,有時候，處理速度的偏差是不可避免的，例如因為網路延遲、資源競爭或不可預測的負載激增。,/ɪnˈɛvɪtəbəl/,Tech
 
 initialism,"Cable News Network, usually referred to by its initialism CNN, is a major English language television network.",n. 首字母縮寫 (分開念),有線電視新聞網（通常用首字母縮寫 CNN 稱呼）是一個主要的英語電視網。,/ɪˈnɪʃəlɪzəm/,Life
 
@@ -288,17 +675,7 @@ obnoxious,Some of his colleagues say that he's loud and obnoxious.,adj. 令人�
 
 obstacle,"I've been self-learning English in Taiwan for 25 years, and I know exactly what kind of obstacles Taiwanese students face.",n. 障礙,我在台灣自學英文 25 年了，我完全清楚台灣學生面臨什麼樣的障礙。,/ˈɒbstəkl̩/,Life
 
-opposite,They're completely opposite to each other in every way.,adj. 相反的,他們在各方面都截然相反。,/ˈɒpəsɪt/,Life
-
-plural,"""Woman"" in the plural is ""women"".",n./adj. 複數(的),"""Woman"" 的複數是 ""women""。",/ˈplɔː.ɹəl/,Life
-
-presence,I'm in charge of our social media presence.,n. 存在；風采；曝光度,我負責處理我們在社群媒體上的形象與曝光度。,/ˈpɹɛzəns/,Life
-
-primary,The primary responsibility lies with those who break the law.,adj. 首要的，主要的,主要責任在於那些違法的人。,/ˈpɹɒeməɹi/,Life
-
 pull something off,The central bank has pulled off one of the biggest financial rescues of recent years.,phr. 成功完成困難的事,央行成功完成了近年來最大的金融救援之一。,/pʊl/ /ˈsamθɪŋ/ /ɔːf/,Life
-
-put something off,The meeting has been put off for a week.,phr. 延遲，推遲,會議被延遲了一週。,/pʊt/ /ˈsamθɪŋ/ /ɔːf/,Life
 
 renown,Her renown spread across the country.,n. 名望，聲譽,她的名望傳遍了全國。,/ɹɪˈnaʊn/,Life
 
@@ -312,8 +689,6 @@ severity,I don't think you quite understand the severity of our financial proble
 
 sheer,It was sheer coincidence that we met.\nThe suggestion is sheer nonsense.,adj. 完全的，純粹的,我們的相遇純粹是巧合。\n這個建議完全是胡說八道。,/ˈʃɪə/,Life
 
-sketch,She did a quick sketch of her father reading the paper.,n. 草圖，素描,她為正在看報的父親畫了一幅快速的素描。,/skɛtʃ/,Life
-
 skew,"Sometimes, skewed processing speeds are inevitable due to, e.g., network delays.",v./adj. 使偏斜；歪斜的,有時候，處理速度的偏差是不可避免的，例如因為網路延遲。,/skjuː/,Tech
 
 spike,unpredictable workload spikes,n. 尖峰，激增,不可預測的負載激增,/spaɪk/,Life
@@ -322,17 +697,7 @@ supersede,Most of the old road has been superseded by the great interstate highw
 
 temptation,"This ensures that a portion of your income is saved automatically each month, reducing the temptation to spend it.",n. 誘惑,這確保每個月都會自動存下一部分收入，減少花掉它的誘惑。,/tɛmpˈteɪʃən/,Life
 
-tip,He tipped his breakfast cereal into a bowl.\nHe gave me some tips about the best way to catch trout.,v./n. 傾倒；小費；提示,他把早餐麥片倒進碗裡。\n他給了我一些關於釣鱒魚最好方法的提示。,/tɪp/,Life
-
-trap,The fox got its foot caught in a trap.\nSand and leaves trapped the water in the stream.,n./v. 陷阱；困住,狐狸的腳被夾在陷阱裡。\n沙子和樹葉把水困在溪流中。,/tɹæp/,Life
-
-trick,Dean tricked the old lady into giving him eight hundred dollars.\nWhat's the trick to getting this chair to fold up?,n./v. 詭計，訣竅；欺騙,Dean 騙了那位老太太給他八百元。\n把這張椅子折起來的訣竅是什麼？,/tɹɪk/,Life
-
 unconsciously,"By cultivating the habit of thinking in English, we will unconsciously make progress in the future.",adv. 無意識地,透過培養用英文思考的習慣，我們未來會在不知不覺中取得進步。,/ˌʌnˈkɒnʃəsli/,Life
-
-wanna,We’re going to the shopping mall. You wanna come?,want to 的口語,我們要去購物中心，你想來嗎？,,Life
-
-weigh,She weighs herself every week on the scales in the bathroom.,v. 稱重,她每週都在浴室的體重計上稱體重。,/weɪ/,Life
 
 wrt / w.r.t.,"With respect/regard to your request, we regret that we are unable to assist you in this matter.",關於 (with respect to),關於您的請求，我們很遺憾無法在這件事上協助您。,,Life
 
@@ -346,37 +711,11 @@ pagination,A pagination error caused page 8000 to follow page 7099.,n. 頁碼，
 
 paginate,The book was paginated incorrectly.,v. 標頁碼,這本書的頁碼標錯了。,/ˈpædʒəneɪt/,Life
 
-persuade,"If she doesn't want to go, nothing you can say will persuade her.",v. 說服,如果她不想去，你說什麼都無法說服她。,/pəˈsweɪd/,Life
-
-figure,You'll easily make six figures in salary if you get into renowned company.,n. 數字，人物,如果你進入知名公司，很容易就能拿到六位數的薪水。,/ˈfɪɡjɚ/,Economy
-
 drastic,Many employees have had to take drastic cuts in pay.,adj. 劇烈的，極端的,許多員工不得不接受大幅度的減薪。,/ˈdɹɑːs.tɪk/,Life
 
 drastically,Our communication environment has changed drastically in the last 10 years.,adv. 劇烈地,我們的溝通環境在過去 10 年發生了劇烈的變化。,,Life
 
-severe,In parts of Africa there is a severe food/water shortage.,adj. 嚴重的,在非洲部分地區，食物/水嚴重短缺。,/sɪˈvɪə/,Life
-
-decent,Everyone should be entitled to a decent wage.,adj. 體面的，像樣的,每個人都應該有權獲得一份像樣的工資。,/ˈdiːsənt/,Life
-
-messy,Her house is very messy.,adj. 凌亂的,她的房子非常凌亂。,/ˈmɛsi/,Life
-
-establish,The brewery was established in 1822.\nEstablish the foundation when you're Leecoding!,v. 建立，創立,這家啤酒廠成立於 1822 年。\n在刷 LeetCode 時打好基礎！,/ɪˈstæb.lɪʃ/,Life
-
-taste,I love the taste of garlic.,n./v. 味道；品嚐,我喜歡大蒜的味道。,/teɪst/,Life
-
-attempt,He attempted to escape through a window.,v./n. 嘗試，企圖,他企圖從窗戶逃跑。,/əˈtɛmpt/,Life
-
-subjective,More specific and less subjective criteria should be used in selecting people for promotion within the company.,adj. 主觀的,在選擇公司內部晉升人員時，應使用更具體且較不主觀的標準。,/səbˈdʒɛktɪv/,Economy
-
-objective,I can't really be objective when I'm judging my daughter's work.,adj./n. 客觀的；目標,在評判我女兒的作品時，我實在無法客觀。,/ɒbˈd͡ʒɛk.tɪv/,Life
-
-realize,They didn't realize the danger they were in.,v. 了解，意識到；實現,他們沒有意識到自己身處危險之中。,/ˈɹɪə.laɪz/,Life
-
-formula,There's no magic formula for success.,n. 公式，配方,成功沒有魔法公式。,/ˈfɔː.mjʊ.lə/,Life
-
 bar raiser,The most difficult interview for the candidate was the one with the Bar Raiser.,n. 提高標準的人 (面試角色),對求職者來說，最困難的面試是與 Bar Raiser (把關者) 的面試。,/bɑː/ raiser,Life
-
-rinse,"There was no soap, so I just rinsed my hands with water.",v. 沖洗,沒有肥皂，所以我只用水沖洗了雙手。,/ɹɛns/,Life
 
 rinse and repeat,"Wash your hair, rinse and repeat.",phr. 重複同樣的步驟,洗頭髮，沖洗，然後重複。,/ɹɛns/ and repeat,Life
 
@@ -396,15 +735,13 @@ undercut,undercutting fears that AI automation is currently eroding the demand f
 
 erode,eroding the demand for cognitive labor across the economy,v. 侵蝕，削弱,侵蝕整個經濟對認知勞動力的需求,/ɪˈɹoʊd/,Economy
 
-cognitive,cognitive labor,adj. 認知的,認知勞動力,/ˈkɒɡnɪtɪv/,Life
+cognitive,cognitive labor,adj. 認知的,認知勞動力,/ˈkɒɡ.nə.tɪv/,Life
 
 adoption,The adoption of generative AI was at an early stage.,n. 採用,生成式 AI 的採用尚處於早期階段。,/əˈdɒp.ʃən/,Tech
 
 assess,The researchers plan to monitor relevant data monthly to assess how AI’s job impacts might change.,v. 評估,研究人員計畫每月監控相關數據，以評估 AI 對工作的影響可能會有何改變。,/əˈsɛs/,Tech
 
 initiative,"Although she was quite young, she showed a lot of initiative and was promoted to manager after a year.\nHe began his lecture by talking down the initiatives of a rival company.",n. 主動性，倡議,雖然她很年輕，但她展現了很高的主動性，並在一年後被晉升為經理。\n他開始演講時貶低了競爭對手公司的倡議。,/ɪˈnɪʃətɪv/,Economy
-
-enthusiasm,After the accident he lost his enthusiasm for the sport.,n. 熱情,意外發生後，他失去了對這項運動的熱情。,/-θuː-/,Life
 
 persistence,Her persistence and enthusiasm have helped the group to achieve its international success.,n. 堅持,她的堅持和熱情幫助團隊在國際上取得了成功。,/pəˈsɪst(ə)ns/,Global
 
@@ -422,43 +759,17 @@ ambitious,She has some ambitious plans for her business.,adj. 有野心的,她�
 
 ambiguous,His reply to my question was somewhat ambiguous.,adj. 模稜兩可的,他對我問題的回答有些模稜兩可。,/æmˈbɪɡjuəs/,Life
 
-intentionally,I didn't ignore her intentionally - I just didn't recognize her.,adv. 故意地,我不是故意忽略她 - 我只是沒認出她。,,Life
-
-rival,The company has decided not to go through with the takeover of its smaller rival.,n. 競爭對手,公司決定不進行對其較小競爭對手的收購。,/ˈɹaɪvəl/,Economy
-
 takeover,The company has decided not to go through with the takeover of its smaller rival.,n. 收購，接管,公司決定不進行對其較小競爭對手的收購。,,Economy
 
-settle,The details of the contract have not yet been settled.,v. 解決，定居，確定,合約的細節尚未確定。,/ˈsɛtəl/,Life
-
 setback,There has been a slight/temporary setback in our plans.,n. 挫折,我們的計畫遭遇了輕微/暫時的挫折。,/ˈsɛtbæk/,Life
-
-parenthesis,"An open interval does not include any endpoint, and is indicated with parentheses.",n. 圓括號 (),開區間不包含任何端點，並用圓括號表示。,/pəˈɹɛnθəsɪs/,Life
-
-bracket,A closed interval is an interval that includes all its endpoints and is denoted with square brackets.,n. 方括號 [],閉區間是包含所有端點的區間，並用方括號表示。,/ˈbɹækɪt/,Life
-
-brace,"Parentheses are smooth and curved ( ), brackets are square [ ], and braces are curly { }.",n. 大括號 {},圓括號是平滑彎曲的 ( )，方括號是方形的 [ ]，大括號是捲曲的 { }。,/bɹeɪs/,Life
 
 set the tone (for something),"As the leader of the project, I knew that my reaction would set the tone for the group.",phr. 定調,身為專案領導者，我知道我的反應會為團隊定下基調。,/sɛt/ the tone (for something),Life
 
 a blessing in disguise,I challenged the group to think of this setback as a blessing in disguise.,phr. 因禍得福,我挑戰團隊將這個挫折視為因禍得福。,/æɪ/ blessing in disguise,Life
 
-blessing,We ask God's blessing on Joan at this difficult time.,n. 祝福,我們祈求上帝在這個困難時期賜福給瓊。,/ˈblɛs.ɪŋ/,Life
-
 disguise,He put on a large hat and glasses as a disguise and hoped no one would recognize him.\nHe disguised himself by wearing a false beard.,n./v. 偽裝,他戴上大帽子和眼鏡作為偽裝，希望沒人認出他。\n他戴著假鬍子偽裝自己。,/dɪsˈɡaɪz/,Life
 
-beard,He's growing a beard.,n. 鬍鬚,他正在留鬍子。,/bɪəd/,Life
-
-turn out,The truth turned out to be stranger than we had expected.\nIt turns out that she had known him when they were children.,phr. 結果是,真相結果比我們預期的還要離奇。\n原來她小時候就認識他了。,/tɜːn/ /æɔt/,Life
-
-superior,She was chosen for the job because she was the superior candidate.,adj. 優越的,她被選中這份工作是因為她是更優秀的候選人。,/suːˈpɪəɹi.ə(ɹ)/,Life
-
-fright,"When I present an idea, or concept to a larger audience, I still experience some stage fright.",n. 驚嚇,當我向廣大觀眾展示一個想法或概念時，我仍然會有些怯場。,/fɹʌit/,Life
-
-stage fright,Actors or performers who have stage fright are nervous because they are about to perform.,n. 怯場,有怯場情緒的演員或表演者會因為即將表演而感到緊張。,/steɪd͡ʒ/ /fɹʌit/,Life
-
-legit / legitimate,He claimed that the restaurant bill was a legitimate business expense.,adj. 合法的，正當的,他聲稱這筆餐廳帳單是正當的業務支出。,/ləˈdʒɪt/,Life
-
-occasion,"On rare occasions, you may wish to make sure that only one RAII object refers to a raw resource and that when the RAII object is copied, ownership of the resource is transferred from the copied object to the copying object.",n. 場合，時機,在極少數情況下，您可能希望確保只有一個 RAII 物件指向原始資源，且當複製 RAII 物件時，資源的所有權會從被複製的物件轉移到進行複製的物件。,/əˈkeɪʒən/,Tech
+legit / legitimate,He claimed that the restaurant bill was a legitimate business expense.,adj. 正當的；合理的，合法的,他聲稱這筆餐廳帳單是正當的業務支出。,/ləˈdʒɪt/,Life
 
 entail,Properly implementing the RAII pattern entails that the object's copy semantics must be explicitly defined.,v. 牽涉，需要,正確實作 RAII 模式需要明確定義物件的複製語義。,/ənˈteɪl/,Tech
 
@@ -468,11 +779,9 @@ circumstance,Obviously we can't deal with the problem until we know all the circ
 
 oblivious,"Absorbed in her work, she was totally oblivious of her surroundings.",adj. 未察覺的，不知道的,她專注於工作，完全沒有察覺到周圍的環境。,/əˈblɪ.vi.əs/,Life
 
-absorb,The project has absorbed her for several years.\nIt's hard to absorb so much information.,v. 吸收，理解，全神貫注,這個專案讓她全神貫注了好幾年。\n要吸收這麼多資訊很困難。,/əbˈsɔːb/,Life
-
 abstain,"To avoid confusion, abstain from 'typedef' for array types.\nHe took a vow to abstain from alcohol and smoking.",v. 戒除，放棄，避免,為了避免混淆，請避免對陣列類型使用 'typedef'。\n他發誓要戒除菸酒。,/əbˈsteɪn/,Life
 
-occurrence,The study compares the occurrence of heart disease in various countries.,n. 發生，事件,該研究比較了各國心臟病的發生率。,/əˈkɐɹən(t)s/,Life
+occurrence,The study compares the occurrence of heart disease in various countries.,n. 發生；出現，事件,該研究比較了各國心臟病的發生率。,/əˈkɐɹən(t)s/,Life
 
 curriculum,Maths is an intrinsic part of the school curriculum.,n. 課程大綱,數學是學校課程大綱中不可或缺的一部分。,/kəˈɹɪk.jə.ləm/,Life
 
@@ -482,25 +791,19 @@ peripheral,The book contains a great deal of peripheral detail.,adj. 外圍的�
 
 intervention,Repeated interventions on the currency markets failed to prevent the currency's value falling.\nI/O is done with no CPU intervention.,n. 干涉，介入,對外匯市場的反覆干預未能阻止貨幣貶值。\nI/O 操作無需 CPU 介入即可完成。,/ɪntəˈvɛnʃən/,Economy
 
-unpleasant,"When we complained, the waiter got very unpleasant with us.",adj. 令人不快的，不友善的,當我們投訴時，服務生對我們態度非常惡劣。,/ʌnˈplezənt/,Life
-
 conform,"At our school, you were required to conform, and there was no place for originality.",v. 順從，遵從,在我們學校，你必須循規蹈矩，沒有絲毫創新的空間。,/kənˈfɔːm/,Life
 
-integrity,Parallel systems require extensive synchronization to protect data integrity.\nNo one doubted that the president was a man of the highest integrity.,n. 完整性；正直,並行系統需要廣泛的同步以保護資料完整性。\n沒有人懷疑總統是個品格最高尚的人。,/ɪnˈtɛɡɹəti/,Tech
+integrity,Parallel systems require extensive synchronization to protect data integrity.\nNo one doubted that the president was a man of the highest integrity.,n. 完整性；健全性；正直,並行系統需要廣泛的同步以保護資料完整性。\n沒有人懷疑總統是個品格最高尚的人。,/ɪnˈtɛɡɹəti/,Tech
 
 necessitate,"Parallel systems necessitate extensive synchronization, which can often lead to performance overhead.",v. 使成為必需，需要,並行系統需要大量的同步，這通常會導致效能負擔。,/nɪˈsɛsɪteɪt/,Tech
 
 congestion,These facilities are designed to ease the congestion of emergency rooms.,n. 擁塞，擠擁,這些設施旨在緩解急診室的擁擠狀況。,/kʊnˈd͡ʒɛʃ.d͡ʒən/,Life
-
-constant,These machines are in constant use.,adj. 持續不斷的，恆定的,這些機器一直不停地運轉。,/ˈkɒnstənt/,Tech
 
 contradictory,Chip architects often struggle to balance the contradictory demands of increasing processing speed and extending battery life.,adj. 矛盾的，對立的,晶片架構師經常難以平衡提高處理速度和延長電池壽命這兩個相互矛盾的需求。,/ˌkɑntɹəˈdɪktəɹi/,Tech
 
 compulsory,Compulsory tasks are marked with due dates.\nThe law made wearing seat belts in cars compulsory.,adj. 強制性的，義務的,必做任務都標有截止日期。\n法律規定車內必須繫安全帶。,/kəmˈpʌlsəri/,"Tech,Global"
 
 backlash,OpenAI is facing extreme backlash after signing a deal with the Department of War to use their AI for military.,n. 強烈反彈，強烈反對,OpenAI 與美國國防部簽署協議，允許其人工智慧技術用於軍事用途，此舉引發了強烈的反彈。,/ˈbækˌlæʃ/,"Tech,Global"
-
-domestic,The military might use it for domestic mass surveillance.,adj. 國內的，家庭的,軍方可能會利用它進行國內的大規模監控。,/dəˈmɛstɪk/,Life
 
 autonomous,The fear that they might use it for autonomous weapons.,adj. 自主的，自治的,擔心他們可能會將其用於自主武器。,/ɔːˈtɒnəməs/,Life
 
@@ -510,15 +813,11 @@ play both sides,"So the problem with OpenAI is that it seems like they're trying
 
 nonprofit,Originally they were a nonprofit founded to make sure that this exact thing wouldn't happen.,n./adj. 非營利組織；非營利的,他們最初是一家非營利組織，成立的初衷正是為了防止此類事件發生。,,Global
 
-pollute,The company is trying to play both sides by promoting green energy while secretly investing in high-polluting industries.,v. 污染,該公司試圖兩面討好，一方面推廣綠色能源，另一方面卻暗中投資高污染產業。,/pəˈljuːt/,Economy
-
 classified,These documents contain classified material.,adj. 機密的,這些文件包含機密資料。,,Tech
 
 lethal,"The rise of lethal, autonomous weapons has pushed global powers into a tense equilibrium.",adj. 致命的,致命性自主武器的興起已將全球大國推入一種緊張的平衡狀態。,/ˈliː.θəl/,Global
 
 patriotic,Elon Musk argues that providing full access to the US is a patriotic duty.,adj. 愛國的,伊隆馬斯克認為，向美國提供全面訪問權限是一種愛國義務。,/ˈpeɪ.tɹi.ɒ.tɪk/,Global
-
-critic,Critics fear such power could be abused for domestic mass surveillance.,n. 評論家，批評者,批評者擔心這種權力可能被濫用於國內大規模監控。,/ˈkɹɪt.ɪk/,Life
 
 equilibrium,The rise of lethal weapons has pushed global powers into a tense equilibrium.,n. 平衡，均衡,致命武器的興起已將全球大國推入一種緊張的平衡狀態。,/iːkwɪˈlɪbɹɪəm/,Global
 
@@ -528,21 +827,11 @@ decimate,"Any nation that hesitates to develop these tools risks being decimated
 
 recipient,The recipient agrees to obtain all proprietary information solely for the purpose of furthering the fulfillment of this undertaking.,n. 接受者,接收方同意僅為履行本協議之目的獲取所有專有資訊。,/ɹəˈsɪp.i.ənt/,Global
 
-obtain,The recipient agrees to obtain all proprietary information solely for the purpose of furthering the fulfillment of this undertaking.,v. 獲得,接收方同意僅為履行本協議之目的獲取所有專有資訊。,/əbˈteɪn/,Global
-
 proprietary,The recipient agrees to obtain all proprietary information.,adj. 專有的，所有權的,接收方同意獲取所有專有資訊。,/pɹəˈpɹɑɪətɛɹi/,Life
-
-further,solely for the purpose of furthering the fulfillment of this undertaking,v. 促進，推動,僅為推動履行本協議之目的,/fɜː(ɹ)ðə(ɹ)/,Global
 
 disclose,The recipient shall not disclose any such information to any unauthorized person.,v. 透露，公開,接收方不得向任何未經授權的人員披露任何此類資訊。,/dɪsˈkləʊz/,Life
 
-sole,solely for the purpose of furthering the fulfillment...,adj./adv. 唯一的(地),僅為推動履行之目的...,/səʊl/,Life
-
 fulfillment,furthering the fulfillment of this undertaking,n. 履行，實現,推動本承諾的履行,,Life
-
-observe,shall observe strict secrecy at all times.,v. 遵守；觀察,應始終嚴格遵守保密規定。,/əbˈzɝv/,Life
-
-measure,The recipient must measure and demonstrate evidence that all provisions of this agreement have been duly followed.,v./n. 測量；措施，方法,接收方必須衡量並提供證據證明本協議的所有條款均已妥善遵守。,/ˈmɛʒə/,Global
 
 envisage,Both parties acknowledge that they envisage no tangible asset other than the invention.,v. 設想，預期,雙方確認，除發明外，雙方不預期獲得任何其他有形資產。,/ɛnˈvɪzɪdʒ/,Economy
 
@@ -554,15 +843,11 @@ unauthorized,shall not disclose any such information to any unauthorized person,
 
 remedy,"In the event of any breach, the sole remedy shall be at the expense of the breaching party.",n./v. 補救，補償,如發生任何違約行為，唯一的補救措施應由違約方承擔費用。,/ˈɹɛmədi/,Economy
 
-expense,shall be at the expense of the breaching party,n. 費用，代價,應由違約方承擔費用,/ɪkˈspɛns/,Economy
-
 obligation,to comply with this agreement in accordance with the obligation set forth herein.,n. 義務,根據本協議規定的義務遵守本協議。,/ɑb.ləˈɡeɪ.ʃən/,Global
 
 oblige,Each party obliges its respective representative to comply with this agreement.,v. 迫使，責成，使有義務,雙方均應責成其各自代表遵守本協議。,/əˈblaɪdʒ/,Global
 
-demonstrate,The recipient must measure and demonstrate evidence...,v. 證明，展示,接收方必須衡量並提供證據...,/ˈdɛmənstɹeɪt/,Life
-
-evidence,demonstrate evidence that all provisions have been followed,n. 證據,提供條款已獲遵守的證據,[ˈɛvəɾəns],Global
+evidence,demonstrate evidence that all provisions have been followed,n. 證據；佐證,提供條款已獲遵守的證據,[ˈɛvəɾəns],Global
 
 breach,"In the event of any breach, the sole remedy...",n./v. 違約，違反,如發生任何違約行為，唯一的補救措施...,[bɹiːtʃ],Life
 
@@ -598,10 +883,6 @@ waiver,No waiver of any term shall be construed as a continuing waiver.,n. 放�
 
 with respect to,all rights and duties with respect to the matter hereof,phr. 關於,關於本協議事項的所有權利和義務,with /ɹɪˈspɛkt/ /tʉː/,Global
 
-subject,subject matter hereof,n. 主題，標的,本協議標的物,/ˈsʌb.dʒɪkt/,Global
-
-matter,subject matter hereof,n. 事項，標的,本協議標的物,/ˈmætə/,Global
-
 hereof,with respect to the matter hereof,adv. 本文的，關於此的,關於本協議的事項,,Global
 
 herein,the obligation set forth herein,adv. 在此 / 在本文件中\n(= in this agreement),本協議規定的義務,,Global
@@ -610,13 +891,11 @@ hereto,any dispute arising hereto,adv. 對此,因本協議引起的任何爭議,
 
 contemporaneous,supersede all contemporaneous oral or written understandings.,adj. 同時期的,取代所有同期達成的口頭或書面諒解。,/kənˌtɛm.pəˈɹeɪ.ni.əs/,Life
 
-oral,oral or written understandings,adj. 口頭的,口頭或書面的諒解,/ˈɒɹəl/,Life
-
 amendment,No amendment shall be valid unless duly executed in writing.,n. 修正，修訂,除非經書面正式簽署，否則任何修改均無效。,/ʌˈmɛnd.mənt/,Life
 
 duly,duly executed in writing,adv. 正式地，妥當地,經書面正式簽署,/ˈdjʉːli/,Life
 
-representative,Each party obliges its respective representative...,n. 代表,雙方責成其各自代表...,/ˌɹɛpɹɪˈzɛnt(ət)ɪv/,Life
+representative,Each party obliges its respective representative...,n./adj. 代表；具代表性的,雙方責成其各自代表...,/ˌɹɛpɹɪˈzɛnt(ət)ɪv/,Life
 
 subsidiary,"obliges its respective representative, subsidiary and affiliate",n. 子公司,責成其各自代表、子公司和關聯公司,/sʌbˈsɪ.di.əɹ.i/,Economy
 
@@ -624,19 +903,9 @@ affiliate,subsidiary and affiliate,n. 關聯公司，附屬機構,子公司和�
 
 respective,its respective representative,adj. 各自的,其各自的代表,/ɹɪˈspɛktɪv/,Life
 
-promptly,who shall promptly prompt all necessary corrective actions.,adv. 及時地，迅速地,違約方應立即採取一切必要的糾正措施。,/ˈpɹɒmptli/,Life
-
-invention,the invention and composition of ideas,n. 發明,思想的發明與構思,/ɪnˈvɛnʃən/,Life
-
-composition,the invention and composition of ideas,n. 組合，構思，作品,思想的發明與構思,/ˌkɒmpəˈzɪʃən/,Life
-
-acknowledge,Both parties acknowledge that they envisage no tangible asset...,v. 承認，確認,雙方確認，他們不預期有任何有形資產...,/əkˈnɒ.lɪdʒ/,Economy
-
-set out,Your contract will set out the terms and conditions of your employment.\nThey set out to discover a cure for cancer.,phr. 闡明；出發，開始,您的合約將列明您的僱用條款和條件。\n他們著手尋找癌症的治療方法。,set /æɔt/,Global
+acknowledge,Both parties acknowledge that they envisage no tangible asset...,v. 確認收到；承認，確認,雙方確認，他們不預期有任何有形資產...,/əkˈnɒ.lɪdʒ/,Economy
 
 set forth,They set forth on their travels in early June.,phr. 闡述；啟程,他們於六月初啟程旅行。,/sɛt/ /fɔːθ/,Life
-
-forth,From that day forth he never drank again.,adv. 向前，往後,從那天起，他再也沒有喝過酒。,/fɔːθ/,Life
 
 dispute,The parties conceive that any dispute arising hereto shall be resolved...,n. 爭議,雙方認為，因本協議引起的任何爭議應解決...,/ˈdɪs.pjuːt/,Global
 
@@ -648,123 +917,61 @@ immense,They spent an immense amount of time getting the engine into perfect con
 
 immensely,We deal with an immensely different range of different companies.,adv. 極大地，非常,我們與各種各樣截然不同的公司打交道。,/ɪˈmɛnsli/,Economy
 
-diverse,New York is a very culturally/ethnically diverse city.,adj. 多元化的，各種各樣的,紐約是一個文化和種族非常多元化的城市。,/daɪˈvɜːs/,Life
-
 embrace,The company embraced the new technology enthusiastically.,v. 擁抱，欣然接受,公司熱情地接受了新技術。,/ɛmˈbɹeɪs/,"Tech,Economy"
 
-instrument,She plays several musical instruments.,n. 樂器，儀器,她會彈奏幾種樂器。,/ˈɪnstɹəmənt/,Life
-
-commit,He was sent to prison for a crime that he didn't commit.,v. 承諾；犯罪,他因為沒有犯下的罪行而被送進監獄。,/kəˈmɪt/,Life
+commit,He was sent to prison for a crime that he didn't commit.,v./n. 程式碼提交；一次版本變更；承諾；犯罪,他因為沒有犯下的罪行而被送進監獄。,/kəˈmɪt/,Tech
 
 anticipate,We don't anticipate any trouble.,v. 預料，預期,我們預計不會有任何麻煩。,/ænˈtɪs.ɪ.peɪt/,Life
-
-competition,There's a lot of competition for jobs.,n. 競賽，競爭,就業競爭非常激烈。,/ˌkɒmpəˈtɪʃən/,Life
 
 keep someone on their toes,Regular checks keep the staff on their toes.,phr. 讓某人保持警惕,定期的檢查讓員工保持警惕。,/kiːp/ /ˈsʌmwʌn/ /ɒn/ their /təʊz/,Life
 
 come down to,It really comes down to what our customers are looking for.,phr. 歸根究底在於,歸根究底，這取決於我們的客戶想要什麼。,/kʌm/ /daʊn/ /tʉː/,Life
 
-laboratory / lab,The research was carried out in a laboratory.,n. 實驗室,這項研究是在實驗室裡進行的。,/ləˈbɔɹətɹi/,Life
-
-balloon,The rumors soon ballooned into a major scandal.,v. 激增；氣球,謠言很快就演變成了一樁大醜聞。,/bəˈluːn/,Life
-
 heat sink,"Underneath these heat sinks, you have two different Arm AGI CPUs.",n. 散熱器,在這些散熱片下方，有兩個不同的 Arm AGI CPU。,/hit/ /sɪŋk/,Life
-
-sink,The sun glowed red as it sank slowly below the horizon.,v. 下沉,太陽緩緩沉入地平線，泛起一片紅光。,/sɪŋk/,Life
-
-dense,a dense forest,adj. 稠密的,茂密的森林,/dɛns/,Life
-
-bet,"She bet £500,000 on the horse that came in second.",n./v. 打賭，賭注,她在那匹跑第二的馬上押了五十萬英鎊。,/ˈbɛt/,Life
-
-appeal to,The idea of working abroad really appeals to me.,phr. 呼籲；對...有吸引力,去國外工作的想法對我很有吸引力。,/əˈpiːl/ /tʉː/,Life
 
 ruthless,Some people believe that to succeed in this world you have to be ruthless.,adj. 無情的,有些人認為，要在這個世界上成功，就必須冷酷無情。,/ˈɹuːθləs/,Global
 
-burden,I don't want to be a burden on my children.,n. 負擔,我不想成為孩子們的負擔。,/ˈbɜːdn/,Life
-
 spree,a shopping/spending spree,n. 狂歡，無節制地做某事,瘋狂購物／消費,/spɹiː/,Life
-
-appointment,"I'd like to make an appointment with Dr Evans, please.",n. 預約；任命,我想預約埃文斯醫生。,/əˈpɔɪnt.mɛnt/,Life
-
-merchant,a wine merchant,n. 商人,酒商,/ˈmɜːtʃənt/,Life
 
 merchant silicon,Many companies use merchant silicon rather than building their own chips.,n. 商用矽晶片,許多公司使用商用晶片，而不是自己研發晶片。,/ˈmɜːtʃənt/ /ˈsɪləkɑn/,"Tech,Economy"
 
 in-house silicon,Apple uses in-house silicon for its Mac computers.,n. 自主研發晶片,蘋果公司在其 Mac 電腦上使用自主研發的晶片。,in-house /ˈsɪləkɑn/,"Tech,Economy"
 
-steadily,Prices have risen steadily.,adv. 穩定地,物價穩定上漲。,/ˈstɛdɪli/,Life
-
-steady,steady economic growth,adj. 穩定的,穩定的經濟成長,/ˈstɛdi/,Economy
-
-decline,His interest in the project declined after his wife died.,v./n. 衰退，下降,妻子死後，他對這個計畫的興趣減弱了。,/dɪˈklaɪn/,Life
+decline,His interest in the project declined after his wife died.,v./n. 婉拒；下降、衰退,妻子死後，他對這個計畫的興趣減弱了。,/dɪˈklaɪn/,Life
 
 pragmatic,"In business, the pragmatic approach to problems is often more successful than an idealistic one.",adj. 務實的,在商業中，務實解決問題的方法往往比理想主義的方法更成功。,/pɹæɡˈmætɪk/,Economy
 
 traction,"In our digital age, it takes less time for new words and phrases to gain traction.",n. 牽引力，影響力,在我們的數位時代，新詞彙和短語獲得影響力所需的時間更短了。,/ˈtɹæk.ʃən/,Tech
 
-sort of,"It's incredibly high performance, and it's sort of ruthlessly optimized.",phr. 某種程度上，有點,它的性能非常高，而且經過了某種程度上極其嚴格的最佳化。,/sɔːt/ /ɔv/,Life
-
-kind of,I was kind of sorry to see him go.,phr. 有點兒,看到他走，我心裡有點難過。,/kaɪnd/ /ɔv/,Life
-
-curious,Babies are curious about everything around them.,adj. 好奇的,嬰兒對周圍的一切都充滿好奇。,/ˈkjɔː-/,Life
-
-consistent,There has been a consistent improvement in her attitude.,adj. 始終如一的，持續的,她的態度有了持續的改善。,/kənˈsɪstənt/,Life
-
-keep up with,Wages are failing to keep up with inflation.,phr. 趕上，跟上,薪資成長未能跟上通貨膨脹的步伐。,/kiːp/ up with,Life
-
-come up with,She's come up with some amazing scheme to double her income.,phr. 想出，提出,她想出了一個絕妙的計畫，可以讓她的收入翻倍。,/kʌm/ /ap/ with,Life
-
-scheme,There's a new scheme in our town for recycling plastic bottles.,n. 方案，計畫,我們鎮上推出了一項新的塑膠瓶回收計畫。,/skiːm/,Life
+consistent,There has been a consistent improvement in her attitude.,adj. 一致的；穩定的；始終如一的,她的態度有了持續的改善。,/kənˈsɪstənt/,Life
 
 have an eye on,Many tech giants have an eye on the next wave of AGI startups.,phr. 密切關注,許多科技巨頭都密切關注下一波通用人工智慧新創公司。,have /æn/ /aɪ/ /ɒn/,"Tech,Economy"
 
 have an eye for,Our chief architect has an eye for efficient silicon design.,phr. 對...有鑑賞力(眼光),我們的首席架構師對高效率的晶片設計有著敏銳的眼光。,have /æn/ /aɪ/ for,Tech
 
-outcome,It's too early to predict the outcome of the meeting.,n. 結果,現在預測會議結果還為時過早。,/ˈaʊtkʌm/,Life
-
-enterprise,Don't forget this is a commercial enterprise - we're here to make money.,n. 企業,別忘了這是一家商業企業——我們來這裡是為了賺錢。,/ˈɛntɚˌpɹaɪz/,Economy
-
 compelling,It's a fairly compelling argument for going.,adj. 令人信服的，引人注目的,這是個相當有說服力的理由去看看。,/kəmˈpɛlɪŋ/,Life
 
 compel,The new circumstances compelled a change in policy.,v. 迫使,新的情況迫使政策做出改變。,/kəmˈpɛl/,Global
-
-evolve,This CPU is the perfect fit as we evolve into an AI data center developer.,v. 發展，進化,隨著我們發展成為 AI 資料中心開發商，這款 CPU 非常契合我們的需求。,/ɪˈvɒlv/,Tech
 
 orchestration,Container orchestration automates the deployment and management of applications.,n. 策劃，編排,容器編排會自動化應用程式的部署與管理。,,Tech
 
 escalate,The escalating rate of inflation will almost certainly bring escalating prices.,v. 升級，惡化,通貨膨脹率不斷攀升幾乎必然會導致物價上漲。,/ˈɛs.kə.leɪt/,Life
 
-amber,The lights turned to amber.,n. 琥珀色，黃燈,燈號變成了黃燈(琥珀色)。,/ˈam.bə/,Life
-
 observance,The Taiwan offices will be closed in observance of Children’s Day.,n. 遵守，紀念,台灣辦公室將因兒童節而放假紀念。,/əbˈzɜːvəns/,Life
 
 compensate,Nothing will ever compensate for his lost childhood.,v. 補償,什麼都無法彌補他失去的童年。,/ˈkɒm.pən.seɪt/,Life
 
-apparently,I saw her last night and apparently it's on the 14th.,adv. 顯然地,我昨晚見到她了，顯然派對改到 14 號了。,/əˈpaɹəntli/,Life
-
-apparent,Her unhappiness was apparent to everyone.,adj. 明顯的,她的不快樂人盡皆知。,/əˈpæ.ɹənt/,Life
+apparently,I saw her last night and apparently it's on the 14th.,adv. 看來；顯然地,我昨晚見到她了，顯然派對改到 14 號了。,/əˈpaɹəntli/,Life
 
 resilient,This rubber ball is very resilient and immediately springs back into shape.,adj. 有彈性的，適應力強的,這種橡膠球彈性極佳，能立即恢復原狀。,,Life
 
 arbitrate,An outside adviser has been brought in to arbitrate the dispute.,v. 仲裁,已聘請外部顧問來仲裁糾紛。,,Life
 
-in place of,You can use milk in place of cream in this recipe.,phr. 代替,在這個食譜中，你可以用牛奶代替鮮奶油。,in /pleɪs/ /ɔv/,Life
-
-make up for,No amount of money can make up for the death of a child.,phr. 彌補,多少錢都無法彌補失去孩子的痛。,/meɪk/ /ap/ for,Life
-
 authentic,"He was there and saw what happened, so his is the only authentic account.",adj. 真實的，可靠的,他當時在場並看到了發生的事情，所以他的描述是唯一真實的。,/ɒ.ˈθɛn.tɪk/,Life
 
 ambiguity,We wish to remove any ambiguity concerning our demands.,n. 歧義，模稜兩可,我們希望消除對我們要求中任何模稜兩可的部分。,/æmbɪˈɡjuːɪti/,Life
 
-approach,We need to adopt a new approach to the problem.,n./v. 方法；接近,我們需要採用新的方法來解決這個問題。,/əˈpɹəʊt͡ʃ/,Life
-
 approachable,Graham's always very approachable - why don't you talk the problem over with him?,adj. 平易近人的,葛拉罕總是很平易近人 - 你為什麼不跟他談談這個問題？,,Life
-
-throughout,He yawned throughout the performance.,prep./adv. 自始至終,他在整個表演過程中都在打哈欠。,/θɹuˈʌʊt/,Life
-
-emerge,"She emerged from the sea, blue with cold.",v. 出現，浮現,她從海裡出來，凍得發紫。,/iˈmɜːd͡ʒ/,Life
-
-emerging,She is an emerging artist in the local community.,adj. 新興的，嶄露頭角的,她是當地社區一位嶄露頭角的藝術家。,,Life
 
 parity,"In the past three years, we worked on this cloud to edge parity concept.",n. 平價，同等,過去三年，我們致力於實現雲端到邊緣的同等融合概念。,/ˈpæɹɪti/,Tech
 
@@ -778,21 +985,11 @@ disruptive,"His teacher described him as a noisy, disruptive influence in class.
 
 boilerplate,You can use a library to reduce the amount of boilerplate code in your project.,n. 樣板，標準程式碼,您可以使用函式庫來減少專案中的樣板程式碼數量。,,Tech
 
-lean,Big companies are leaning into the Google stack.,v. 傾斜，倚靠，積極投入,大型公司都在積極採用(投入) Google 的技術棧。,/liːn/,"Tech,Economy"
-
 lease,Many startups choose to lease office equipment to save on initial costs.,v. 租賃,許多新創公司選擇租賃辦公設備以節省初期成本。,/liːs/,Economy
-
-discount,They usually give you a discount if you buy multiple copies.,n./v. 折扣，打折,如果購買多份，他們通常會給你折扣。,/dɪsˈkaʊnt/,Economy
 
 profound,My grandfather has a profound mistrust of anything new or foreign.,adj. 深遠的，深刻的,我的祖父對任何新事物或外國事物都有深深的不信任感。,/pɹəˈfaʊnd/,Life
 
 coincide,"If the heavy rain had coincided with an extreme high tide, serious flooding would have resulted.",v. 同時發生，重疊,如果暴雨恰逢極端高潮，將會造成嚴重的洪水災害。,/ˌkoʊɪnˈsaɪd/,Life
-
-tide,We must look for ways of stemming the rising tide of protest.,n. 潮水，趨勢,我們必須想辦法遏制日益高漲的抗議浪潮。,/taɪd/,Life
-
-protest,Protests have been made by many people who would be affected.,n./v. 抗議,許多會受到影響的人已經提出了抗議。,/ˈpɹəʊ.tɛst/,Life
-
-appetite,The public has a huge appetite for new technology.,n. 胃口，強烈慾望,大眾對新科技有著極大的熱情(胃口)。,/ˈæp.ə.taɪt/,Tech
 
 delegate,A good manager knows how to delegate tasks to their team.,n./v. 代表；委派,優秀的管理者懂得如何將任務委派給團隊成員。,,Life
 
@@ -800,29 +997,13 @@ adequate,I didn't have adequate time to prepare.,adj. 充足的，適當的,我�
 
 sycophancy,"The king was surrounded by sycophancy, so he never heard the truth.",n. 拍馬屁，諂媚,國王身邊盡是阿諛奉承之徒，所以他從未聽過真話。,,Life
 
-pace,The pace of modern life is very fast.,n. 步伐，節奏,現代生活節奏非常快。,/peɪs/,Life
-
 incentive,Bonus payments provide an incentive to work harder.,n. 激勵，動機,獎金可以激勵員工更努力工作。,/ɪnˈsɛntɪv/,Life
 
 profoundly,Society has changed so profoundly over the last 50 years.,adv. 深刻地,過去 50 年裡，社會發生了翻天覆地的變化。,/pɹəˈfaʊndli/,Global
 
 notwithstanding,"Notwithstanding some members' objections, I think we must go ahead with the plan.",prep. 儘管,儘管有些成員反對，但我認為我們必須繼續執行該計畫。,/ˌnɒtwɪðˈstændɪŋ/,Life
 
-fascinated,I was fascinated to hear about his travels in Japan.,adj. 著迷的,聽到他在日本的旅行經歷，我非常感興趣(著迷)。,/ˈfæsɪneɪtɪd/,Life
-
-biography,He wrote a biography of Winston Churchill.,n. 傳記,他寫了一本溫斯頓·邱吉爾的傳記。,/baɪˈɒɡɹəfi/,Life
-
-strike,The city's bus drivers have been on strike for three weeks.,v./n. 罷工，打擊,這個城市的公車司機已經罷工三週了。,/stɹaɪk/,Life
-
 referral,The doctor gave him a referral to the consultant.,n. 轉診，推薦,醫生給他開了轉診單去看了專科醫生。,/ɹɪˈfɜːɹəl/,Life
-
-well-being,People doing yoga benefit from an increased feeling of well-being.,n. 幸福，福祉,練習瑜珈的人會感到身心更愉悅。,,Life
-
-ordinary,They wanted more stories about ordinary people.,adj. 普通的,他們希望看到更多關於普通人的故事。,/ˈɔːdənɹi/,Life
-
-extraordinary,The passion and drive across the company to reach this point has been extraordinary.,adj. 非凡的,整個公司為達到這一點所展現出的熱情和幹勁令人嘆為觀止。,/ɪksˈtɹɔː(ɹ)dɪnəɹi/,Economy
-
-collective,Moments like this don’t happen without an enormous collective effort.,adj. 集體的,如果沒有巨大的集體努力，這樣的時刻是不可能實現的。,/kəˈlɛktɪv/,Life
 
 lump,I'll be getting the insurance money in two lumps.,n. 塊，筆(金錢),我會分兩筆拿到保險賠償金。,/lʌmp/,Life
 
@@ -844,8 +1025,6 @@ arrange,The meeting has been arranged for Wednesday.,v. 安排,會議已安排�
 
 arrangement,They'd made all the arrangements for the party.,n. 安排,他們已經為派對做好了一切安排。,/əˈɹeɪnd͡ʒmənt/,Life
 
-appoint,He's just been appointed as director of the publishing division.,v. 任命，指定,他剛被任命為出版部門主管。,/əˈpɔɪnt/,Life
-
 compliance,It is the job of the inspectors to enforce compliance with the regulations.,n. 遵守，合規,監督人員的職責是強制執行規定的遵守情況。,/kəmˈplaɪəns/,Life
 
 compliant,The product is compliant with international standards.,adj. 順從的，合規的,該產品符合國際標準。,/kəmˈplʌɪənt/,Global
@@ -862,8 +1041,6 @@ harassment,Sexual harassment in the workplace is not a trivial matter.,n. 騷擾
 
 trivial,I don't know why he gets so upset about something so trivial.,adj. 瑣碎的，微不足道的,我不明白他為什麼會因為這麼點小事而如此生氣。,/ˈtɹɪ.vi.əl/,Life
 
-diversity,Does television adequately reflect the ethnic and cultural diversity of the country?,n. 多樣性,電視節目是否充分反映了一個國家的民族和文化多樣性？,/daɪˈvɜː(ɹ)sɪti/,Global
-
 equity,a society based on equity and social justice,n. 公平，股權,一個建立在公平和社會正義基礎上的社會,/ˈɛk.wɪ.ti/,Global
 
 inclusion,The school has a strong culture of inclusion of students with special needs.,n. 包容,學校有著濃厚的包容特殊需求學生的文化氛圍。,/ɪnˈkluːʒən/,Life
@@ -873,8 +1050,6 @@ ethnic,The factory's workforce reflects the ethnic mix from which it draws its l
 launder,Officials were accused of laundering the stolen funds overseas before returning them to the US.,v. 洗錢，洗滌,官員被指控在將贓款運回美國之前，先在海外洗錢。,/ˈlɑːndə(ɹ)/,Life
 
 sustainability,the company's commitment to environmental sustainability,n. 永續性,公司對環境永續發展的承諾,/səsˌteɪnəˈbɪlɪti/,Economy
-
-primarily,Baseball is primarily a summer game.,adv. 主要地,棒球主要是一項夏季運動。,/pɹaɪˈmɛɹəli/,Life
 
 influence,He has a huge amount of influence over the city council.,n./v. 影響,他對市議會有著巨大的影響力。,/ˈɪn.flu.əns/,Life
 
@@ -968,7 +1143,7 @@ unemployment,Unemployment has fallen again for the third consecutive month.,n. �
 
 amateur,He was an amateur singer until the age of 40.,n./adj. 業餘愛好者(的),他 40 歲前一直是業餘歌手。,/ˈæ.mə.tə/,Life
 
-compromise,"In a social engineering attack, an attacker uses human interaction to compromise information.",n./v. 妥協，危害(安全),在社交工程攻擊中，攻擊者利用人際互動來竊取(危害)資訊。,/ˈkɒmpɹəˌmaɪz/,Tech
+compromise,"In a social engineering attack, an attacker uses human interaction to compromise information.",n./v. 妥協；折衷；危害(安全),在社交工程攻擊中，攻擊者利用人際互動來竊取(危害)資訊。,/ˈkɒmpɹəˌmaɪz/,Tech
 
 solicit,Attackers use email to solicit personal information by posing as a trustworthy organization.,v. 懇求，徵求,攻擊者利用電子郵件冒充可信賴組織來騙取個人資訊。,/səˈlɪsɪt/,Global
 
@@ -994,31 +1169,211 @@ pillar,They are shifting from an internal efficiency tool to a core pillar of Al
 
 evidenced,His dedication is evidenced by his hard work.,adj. 證明屬實的,他的奉獻可以從他的努力工作中得到證明。,,Life
 
-herein,The terms contained herein are final.,adv. 在此 / 在本文件中\n(= in this agreement),本文件包含的條款為最終條款。,,Global
-
 hereby,I hereby declare that the information is true.,adv. 特此 / 藉此,我特此聲明該資訊屬實。,/hɪəˈbʌɪ/,Life
 
 hereunder,The obligations hereunder shall survive termination.,adv. 在下文 / 依據本文件,本文件項下的義務在終止後仍然有效。,,Global
 
-prompt,A prompt decision is needed.,adj./v./n. 迅速的 / 提示,需要迅速做出決定。,/pɹɒmpt/,Life
-
-Keep [someone] on [their] toes,The surprise tests keep the students on their toes.,phr. 讓某人保持警惕,突擊考試讓學生們保持警惕。,Keep /ˈsʌmwʌn/ /ɒn/ their toes,Life
-
 toe,He stubbed his toe on the chair.,n. 腳趾,他的腳趾踢到了椅子。,/təʊ/,Life
-
-laboratory,The scientist works in a chemistry laboratory.,n. 實驗室,這位科學家在化學實驗室工作。,/ləˈbɔɹətɹi/,Life
 
 pursue,She decided to pursue a career in television.,v. 追求 / 從事,她決定從事電視行業。,/pəˈʃu/,Life
 
-uneasiness,Growing unease at the prospect of an election is causing fierce arguments within the party.,n. 不安,對即將到來的選舉日益增長的不安引發了黨內激烈的爭論。,/ʌnˈiːzinəs/,Global
+heavy weight compute,Training large AI models requires heavy weight compute resources.,n. 高負載計算 / 重度運算,訓練大型AI模型需要高負載的運算資源。,/ˈhe.vi/ /weɪt/ /kəmˈpjuːt/,Tech
 
-unease,She felt a deep sense of unease.,n. 不安,她感到深深的不安。,,Life
+consistently,She consistently delivers high-quality work.,adv. 一貫地 / 始終如一地,她始終如一地產出高品質的工作。,,Life
 
-scepticism,Many people view artificial intelligence with deep skepticism.,n. 懷疑態度,許多人仍對AI抱持深深的懷疑。,,Tech
+predictable scalability,Cloud infrastructure provides predictable scalability for growing businesses.,n. 可預期的擴展性,雲端基礎設施為成長中的企業提供了可預期的擴展性。,/pɹɪˈdɪktəbl̩/ scalability,"Tech,Economy"
+
+price performance,The new CPU offers excellent price performance.,n. 性價比,新款CPU提供了極佳的性價比。,/pɹaɪs/ [pə.ˈfɔː.məns],Life
+
+critical,It is critical that we launch the product on time.,adj. 關鍵的；嚴重的,我們按時發布產品是至關重要的。,/ˈkɹɪtɪkəl/,Life
+
+fundamentally,The internet fundamentally changed how we communicate.,adv. 根本上地,網際網路從根本上改變了我們溝通的方式。,,Tech
+
+power delivery,Efficient power delivery is crucial for high-performance processors.,n. 供電,高效率的供電對於高效能處理器至關重要。,/ˈpaʊ.ə(ɹ)/ /dɪˈlɪv(ə)ɹi/,Life
+
+all the way down to,Arm controls the architecture all the way down to the silicon.,phr. 一直到... / 深至...,Arm 對架構的控制一直延伸到最底層的晶片。,/ɔːl/ /ði/ /weɪ/ /daʊn/ /tʉː/,Tech
+
+coupled with,"With the ARM silicon coupled with a brand new line of AI accelerators, we have a power-efficient solution.",phr. 加上... / 結合...,結合 ARM 晶片與全新系列的 AI 加速器，我們擁有了一個節能的解決方案。,/ˈkʌpəld/ with,Tech
+
+orchestration layer,Kubernetes serves as the orchestration layer for managing containers.,n. 編排層,Kubernetes 作為管理容器的編排層。,orchestration /leɪə/,Life
+
+frontier,Quantum computing is the new frontier of computer science.,n. 前沿 / 邊界,量子運算是電腦科學的新前沿。,/fɹʌnˈtɪə/,Tech
+
+frontier AI system,Developing a frontier AI system requires massive computational resources.,n. 前沿AI系統 / 尖端AI系統,開發尖端AI系統需要龐大的運算資源。,frontier AI /ˈsɪstəm/,Tech
+
+changing landscape,Companies must adapt to the changing landscape of the digital economy.,n. 不斷變化的格局,公司必須適應數位經濟不斷變化的格局。,/ˈtʃeɪndʒɪŋ/ landscape,"Tech,Economy"
+
+friendliness,The friendliness of the staff made our stay very enjoyable.,n. 友善,員工的友善讓我們的住宿體驗非常愉快。,,Life
+
+approachableness,Her approachableness makes her a great mentor for junior developers.,n. 平易近人,她的平易近人使她成為初級開發人員的優秀導師。,,Life
+
+emerging talent recruiters,Our emerging talent recruiters are looking for fresh university graduates.,n. 新興人才招募人員 / 校園招募人員,我們的新興人才招募人員正在尋找應屆大學畢業生。,emerging /ˈtalənt/ recruiters,Life
+
+cloud to edge parity,Achieving cloud to edge parity ensures seamless deployment of applications.,n. 雲端到邊緣的對等性,實現雲端到邊緣的對等性可確保應用程式的無縫部署。,cloud to /ɛdʒ/ /ˈpæɹɪti/,Tech
+
+faith,I have complete faith in your ability to finish the project.,n. 信念 / 信任,我對你完成這個專案的能力充滿信心。,/feɪθ/,Life
+
+model sycophancy,Model sycophancy occurs when an AI agrees with the user even if the user is wrong.,n. 模型阿諛奉承 / AI迎合傾向,當AI即使在使用者錯誤時也附和使用者，就會發生模型阿諛奉承的情況。,/ˈmɒdl̩/ sycophancy,Tech
+
+put us in a whole different zip code,This breakthrough will put us in a whole different zip code compared to our rivals.,phr. 讓我們進入一個完全不同的境界,這項突破將使我們相較於競爭對手進入一個完全不同的境界。,/pʊt/ /əs/ /ɪn/ /æɪ/ /həʊl/ different zip code,Life
+
+legal claim,The company is facing a massive legal claim over patent infringement.,n. 法律索賠 / 法律主張,該公司正面臨一項關於專利侵權的鉅額法律索賠。,/ˈliː.ɡəl/ /kleɪm/,"Economy,Global"
+
+dismiss,The judge decided to dismiss the case due to lack of evidence.,v. 駁回 / 解僱,由於缺乏證據，法官決定駁回此案。,/dɪsˈmɪs/,Life
+
+juror,A juror must remain impartial throughout the trial.,n. 陪審員,陪審員在整個審判過程中必須保持公正。,/ˈdʒʊəɹɔɹ/,Life
+
+wrap one's head around,I just can't wrap my head around why she would quit such a good job.,phr. 理解，想通 (常接否定字 can't 表示想不透),我就是想不透她為什麼要辭掉這麼好的工作。,/ɹæp/ wʌnz /hɛd/ əˈɹaʊnd/,Life
+
+vault,The data is stored securely in an underground vault.,n./v. 金庫，保險庫；躍過,資料被安全地儲存在地下金庫中。,/vɔːlt/,Tech
+
+hover,A helicopter hovered over the building.,v. 盤旋，徘徊,一架直升機在建築物上方盤旋。,/ˈhɒv.ər/,Life
+
+albeit,"The nation is adapting, albeit slowly, to the new global economy.",conj. 儘管，雖然,該國正在適應新的全球經濟，儘管過程緩慢。,/ɔːlˈbiː.ɪt/,"Economy,Global"
+
+discrepancy,There is some discrepancy between the two accounts.,n. 不一致，差異，出入,這兩份帳目之間有一些出入。,/dɪˈskrep.ən.si/,Life
+
+encompass,The job encompasses a wide range of responsibilities.,v. 涵蓋；包含，包括,這項工作包含廣泛的職責。,/ɪnˈkʌm.pəs/,Life
+
+resilience,The resilience of the economy has come as a surprise to some.,n. 彈性，恢復力，韌性,經濟的韌性讓一些人感到驚訝。,/rɪˈzɪl.i.əns/,Economy
+
+rationale,He explained the rationale behind the decision.,n. 根本原因，邏輯依據，基本理由,他解釋了這個決定背後的基本理由。,/ˌræʃ.əˈnɑːl/,Life
+
+identical,The two rooms were virtually identical.,adj. 完全相同的，極為相似的,這兩個房間幾乎完全相同。,/aɪˈden.tɪ.kəl/,Life
+
+grant,The government has agreed to grant us funding for the project.,v./n. 同意，准予，授予；撥款，補助金,政府已同意為我們的專案提供資金（撥款）。,/ɡrænt/,"Economy,Global"
+
+scarcity,A scarcity of medical supplies was becoming a serious problem.,n. 缺乏，不足，稀缺,醫療物資的短缺正成為一個嚴重的問題。,/ˈskersəti/,Life
+
+chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警察沿著街道追捕嫌疑犯。,/tʃeɪs/,Life
+
+drill,"a dentist's drill\nIn some of these schools, army-style drills are used to instil a sense of discipline.",n. 鑽子；訓練，演習,牙醫的電鑽\n在其中一些學校裡，軍事化的訓練被用來灌輸紀律觀念。,/dɹɪl/,Global
+
+go over something,Remember to go over your essay for grammar and spelling mistakes before you hand it in to me.,phr. 仔細檢查,交給我之前，記得仔細檢查你的文章是否有文法和拼字錯誤。,/ɡəʉ/ /ˈəʊ.və(ɹ)/ /ˈsamθɪŋ/,Life
+
+grocery,I went to the grocery to buy some fruit.\nI bought groceries for the family.,n. 食品雜貨店；食品雜貨,我去雜貨店買了一些水果。\n我為家裡買了些雜貨。,/ˈɡɹəʊs(ə)ɹi/,Life
+
+hand something in,I've decided to hand in my resignation.,phr. 繳交,我決定遞交辭呈。,/hænd/ /ˈsamθɪŋ/ /ɪn/,Life
+
+handy,It's a nice house and it's handy for the train station.,adj. 方便的，有用的,這是一棟好房子，而且離火車站很近（很方便）。,/ˈhæn.di/,Life
+
+opposite,They're completely opposite to each other in every way.,adj. 相反的,他們在各方面都截然相反。,/ˈɒpəsɪt/,Life
+
+plural,"""Woman"" in the plural is ""women"".",n./adj. 複數(的),"""Woman"" 的複數是 ""women""。",/ˈplɔː.ɹəl/,Life
+
+presence,I'm in charge of our social media presence.,n. 存在；風采；曝光度,我負責處理我們在社群媒體上的形象與曝光度。,/ˈpɹɛzəns/,Life
+
+primary,The primary responsibility lies with those who break the law.,adj. 首要的，主要的,主要責任在於那些違法的人。,/ˈpɹɒeməɹi/,Life
+
+put something off,The meeting has been put off for a week.,phr. 延遲，推遲,會議被延遲了一週。,/pʊt/ /ˈsamθɪŋ/ /ɔːf/,Life
+
+sketch,She did a quick sketch of her father reading the paper.,n. 草圖，素描,她為正在看報的父親畫了一幅快速的素描。,/skɛtʃ/,Life
+
+tip,He tipped his breakfast cereal into a bowl.\nHe gave me some tips about the best way to catch trout.,v./n. 傾倒；小費；提示,他把早餐麥片倒進碗裡。\n他給了我一些關於釣鱒魚最好方法的提示。,/tɪp/,Life
+
+trap,The fox got its foot caught in a trap.\nSand and leaves trapped the water in the stream.,n./v. 陷阱；困住,狐狸的腳被夾在陷阱裡。\n沙子和樹葉把水困在溪流中。,/tɹæp/,Life
+
+trick,Dean tricked the old lady into giving him eight hundred dollars.\nWhat's the trick to getting this chair to fold up?,n./v. 詭計，訣竅；欺騙,Dean 騙了那位老太太給他八百元。\n把這張椅子折起來的訣竅是什麼？,/tɹɪk/,Life
+
+weigh,She weighs herself every week on the scales in the bathroom.,v. 稱重,她每週都在浴室的體重計上稱體重。,/weɪ/,Life
+
+persuade,"If she doesn't want to go, nothing you can say will persuade her.",v. 說服,如果她不想去，你說什麼都無法說服她。,/pəˈsweɪd/,Life
+
+figure,You'll easily make six figures in salary if you get into renowned company.,n. 數字，人物,如果你進入知名公司，很容易就能拿到六位數的薪水。,/ˈfɪɡjɚ/,Economy
+
+severe,In parts of Africa there is a severe food/water shortage.,adj. 嚴重的,在非洲部分地區，食物/水嚴重短缺。,/sɪˈvɪə/,Life
+
+decent,Everyone should be entitled to a decent wage.,adj. 體面的，像樣的,每個人都應該有權獲得一份像樣的工資。,/ˈdiːsənt/,Life
+
+messy,Her house is very messy.,adj. 凌亂的,她的房子非常凌亂。,/ˈmɛsi/,Life
+
+establish,The brewery was established in 1822.\nEstablish the foundation when you're Leecoding!,v. 建立，創立,這家啤酒廠成立於 1822 年。\n在刷 LeetCode 時打好基礎！,/ɪˈstæb.lɪʃ/,Life
+
+taste,I love the taste of garlic.,n./v. 味道；品嚐,我喜歡大蒜的味道。,/teɪst/,Life
+
+attempt,He attempted to escape through a window.,v./n. 嘗試，企圖,他企圖從窗戶逃跑。,/əˈtɛmpt/,Life
+
+subjective,More specific and less subjective criteria should be used in selecting people for promotion within the company.,adj. 主觀的,在選擇公司內部晉升人員時，應使用更具體且較不主觀的標準。,/səbˈdʒɛktɪv/,Economy
+
+objective,I can't really be objective when I'm judging my daughter's work.,adj./n. 客觀的；目標,在評判我女兒的作品時，我實在無法客觀。,/ɒbˈd͡ʒɛk.tɪv/,Life
+
+realize,They didn't realize the danger they were in.,v. 了解，意識到；實現,他們沒有意識到自己身處危險之中。,/ˈɹɪə.laɪz/,Life
+
+formula,There's no magic formula for success.,n. 公式，配方,成功沒有魔法公式。,/ˈfɔː.mjʊ.lə/,Life
+
+rinse,"There was no soap, so I just rinsed my hands with water.",v. 沖洗,沒有肥皂，所以我只用水沖洗了雙手。,/ɹɛns/,Life
+
+enthusiasm,After the accident he lost his enthusiasm for the sport.,n. 熱情,意外發生後，他失去了對這項運動的熱情。,/-θuː-/,Life
+
+intentionally,I didn't ignore her intentionally - I just didn't recognize her.,adv. 故意地,我不是故意忽略她 - 我只是沒認出她。,,Life
+
+rival,The company has decided not to go through with the takeover of its smaller rival.,n. 競爭對手,公司決定不進行對其較小競爭對手的收購。,/ˈɹaɪvəl/,Economy
+
+settle,The details of the contract have not yet been settled.,v. 解決，定居，確定,合約的細節尚未確定。,/ˈsɛtəl/,Life
+
+parenthesis,"An open interval does not include any endpoint, and is indicated with parentheses.",n. 圓括號 (),開區間不包含任何端點，並用圓括號表示。,/pəˈɹɛnθəsɪs/,Life
+
+bracket,A closed interval is an interval that includes all its endpoints and is denoted with square brackets.,n. 方括號 [],閉區間是包含所有端點的區間，並用方括號表示。,/ˈbɹækɪt/,Life
+
+brace,"Parentheses are smooth and curved ( ), brackets are square [ ], and braces are curly { }.",n. 大括號 {},圓括號是平滑彎曲的 ( )，方括號是方形的 [ ]，大括號是捲曲的 { }。,/bɹeɪs/,Life
+
+blessing,We ask God's blessing on Joan at this difficult time.,n. 祝福,我們祈求上帝在這個困難時期賜福給瓊。,/ˈblɛs.ɪŋ/,Life
+
+beard,He's growing a beard.,n. 鬍鬚,他正在留鬍子。,/bɪəd/,Life
+
+turn out,The truth turned out to be stranger than we had expected.\nIt turns out that she had known him when they were children.,phr. 結果是,真相結果比我們預期的還要離奇。\n原來她小時候就認識他了。,/tɜːn/ /æɔt/,Life
+
+superior,She was chosen for the job because she was the superior candidate.,adj. 優越的,她被選中這份工作是因為她是更優秀的候選人。,/suːˈpɪəɹi.ə(ɹ)/,Life
+
+fright,"When I present an idea, or concept to a larger audience, I still experience some stage fright.",n. 驚嚇,當我向廣大觀眾展示一個想法或概念時，我仍然會有些怯場。,/fɹʌit/,Life
+
+stage fright,Actors or performers who have stage fright are nervous because they are about to perform.,n. 怯場,有怯場情緒的演員或表演者會因為即將表演而感到緊張。,/steɪd͡ʒ/ /fɹʌit/,Life
+
+occasion,"On rare occasions, you may wish to make sure that only one RAII object refers to a raw resource and that when the RAII object is copied, ownership of the resource is transferred from the copied object to the copying object.",n. 場合，時機,在極少數情況下，您可能希望確保只有一個 RAII 物件指向原始資源，且當複製 RAII 物件時，資源的所有權會從被複製的物件轉移到進行複製的物件。,/əˈkeɪʒən/,Tech
+
+absorb,The project has absorbed her for several years.\nIt's hard to absorb so much information.,v. 吸收，理解，全神貫注,這個專案讓她全神貫注了好幾年。\n要吸收這麼多資訊很困難。,/əbˈsɔːb/,Life
+
+unpleasant,"When we complained, the waiter got very unpleasant with us.",adj. 令人不快的，不友善的,當我們投訴時，服務生對我們態度非常惡劣。,/ʌnˈplezənt/,Life
+
+constant,These machines are in constant use.,adj. 持續不斷的，恆定的,這些機器一直不停地運轉。,/ˈkɒnstənt/,Tech
+
+domestic,The military might use it for domestic mass surveillance.,adj. 國內的，家庭的,軍方可能會利用它進行國內的大規模監控。,/dəˈmɛstɪk/,Life
+
+pollute,The company is trying to play both sides by promoting green energy while secretly investing in high-polluting industries.,v. 污染,該公司試圖兩面討好，一方面推廣綠色能源，另一方面卻暗中投資高污染產業。,/pəˈljuːt/,Economy
+
+critic,Critics fear such power could be abused for domestic mass surveillance.,n. 評論家，批評者,批評者擔心這種權力可能被濫用於國內大規模監控。,/ˈkɹɪt.ɪk/,Life
+
+obtain,The recipient agrees to obtain all proprietary information solely for the purpose of furthering the fulfillment of this undertaking.,v. 獲得,接收方同意僅為履行本協議之目的獲取所有專有資訊。,/əbˈteɪn/,Global
+
+further,solely for the purpose of furthering the fulfillment of this undertaking,v. 促進，推動,僅為推動履行本協議之目的,/fɜː(ɹ)ðə(ɹ)/,Global
+
+sole,solely for the purpose of furthering the fulfillment...,adj./adv. 唯一的(地),僅為推動履行之目的...,/səʊl/,Life
+
+observe,shall observe strict secrecy at all times.,v. 遵守；觀察,應始終嚴格遵守保密規定。,/əbˈzɝv/,Life
+
+measure,The recipient must measure and demonstrate evidence that all provisions of this agreement have been duly followed.,v./n. 測量；措施，方法,接收方必須衡量並提供證據證明本協議的所有條款均已妥善遵守。,/ˈmɛʒə/,Global
+
+set out,Your contract will set out the terms and conditions of your employment.\nThey set out to discover a cure for cancer.,phr. 闡明；出發，開始,您的合約將列明您的僱用條款和條件。\n他們著手尋找癌症的治療方法。,set /æɔt/,Global
+
+appeal to,The idea of working abroad really appeals to me.,phr. 呼籲；對...有吸引力,去國外工作的想法對我很有吸引力。,/əˈpiːl/ /tʉː/,Life
+
+sort of,"It's incredibly high performance, and it's sort of ruthlessly optimized.",phr. 某種程度上，有點,它的性能非常高，而且經過了某種程度上極其嚴格的最佳化。,/sɔːt/ /ɔv/,Life
+
+kind of,I was kind of sorry to see him go.,phr. 有點兒,看到他走，我心裡有點難過。,/kaɪnd/ /ɔv/,Life
+
+keep up with,Wages are failing to keep up with inflation.,phr. 趕上，跟上,薪資成長未能跟上通貨膨脹的步伐。,/kiːp/ up with,Life
+
+come up with,She's come up with some amazing scheme to double her income.,phr. 想出，提出,她想出了一個絕妙的計畫，可以讓她的收入翻倍。,/kʌm/ /ap/ with,Life
+
+in place of,You can use milk in place of cream in this recipe.,phr. 代替,在這個食譜中，你可以用牛奶代替鮮奶油。,in /pleɪs/ /ɔv/,Life
+
+make up for,No amount of money can make up for the death of a child.,phr. 彌補,多少錢都無法彌補失去孩子的痛。,/meɪk/ /ap/ for,Life
+
+primarily,Baseball is primarily a summer game.,adv. 主要地,棒球主要是一項夏季運動。,/pɹaɪˈmɛɹəli/,Life
+
+laboratory,The scientist works in a chemistry laboratory.,n. 實驗室,這位科學家在化學實驗室工作。,/ləˈbɔɹətɹi/,Life
 
 over the last decade,"Over the last decade, technology has advanced rapidly.",phr. 在過去十年裡,在過去的十年裡，科技發展迅速。,/ˈəʊ.və(ɹ)/ /ði/ last decade,Tech
-
-heavy weight compute,Training large AI models requires heavy weight compute resources.,n. 高負載計算 / 重度運算,訓練大型AI模型需要高負載的運算資源。,/ˈhe.vi/ /weɪt/ /kəmˈpjuːt/,Tech
 
 keep innovating,"To stay competitive, a company must keep innovating.",phr. 持續創新,為了保持競爭力，公司必須持續創新。,/kiːp/ innovating,Economy
 
@@ -1026,11 +1381,7 @@ at the speed,Data is transferred at the speed of light in fiber optic cables.,ph
 
 keep up with what's going on,I read the news every morning to keep up with what's going on.,phr. 跟上目前的發展 / 掌握最新動態,我每天早上看新聞以掌握最新動態。,keep up with what's going /ɒn/,Life
 
-consistently,She consistently delivers high-quality work.,adv. 一貫地 / 始終如一地,她始終如一地產出高品質的工作。,,Life
-
 in a way that does not change,The system operates in a way that does not change regardless of the load.,phr. 以不變的方式 / 穩定地,無論負載多大，系統都能以穩定的方式運作。,in a way /ˈðæt/ does /nɒt/ /tʃeɪndʒ/,Tech
-
-predictable scalability,Cloud infrastructure provides predictable scalability for growing businesses.,n. 可預期的擴展性,雲端基礎設施為成長中的企業提供了可預期的擴展性。,/pɹɪˈdɪktəbl̩/ scalability,"Tech,Economy"
 
 drive more energy efficiency,The new architecture is designed to drive more energy efficiency.,phr. 提升能源效率,新架構旨在提升能源效率。,drive /ˈmɔː/ /ˈɛnəd͡ʒi/ /ɪˈfɪʃn̩si/,Tech
 
@@ -1038,21 +1389,15 @@ at the end of the day,"At the end of the day, we need to ensure customer satisfa
 
 ultimately; in the final analysis,"Ultimately, the decision is yours.",adv./phr. 最終 / 歸根結底,最終，決定權在你手上。,ultimately; in /ði/ /ˈfaɪ.nəl/ analysis,Life
 
-price performance,The new CPU offers excellent price performance.,n. 性價比,新款CPU提供了極佳的性價比。,/pɹaɪs/ [pə.ˈfɔː.məns],Life
-
 from a price performance perspective on,"From a price performance perspective, this is the best server on the market.",phr. 從性價比的角度來看,從性價比的角度來看，這是市面上最好的伺服器。,/fɹɒm/ /æɪ/ /pɹaɪs/ [pə.ˈfɔː.məns] perspective on,Tech
 
 cost reduction,The company implemented several cost reduction strategies this year.,n. 成本降低 / 縮減成本,公司今年實施了幾項縮減成本的策略。,/ˈkɑst/ /ɹiˈdɑk.ʃən/,Economy
 
 the best outcome per watt,Our chip delivers the best outcome per watt in the industry.,phr. 每瓦最佳效能 / 最佳的每瓦效能,我們的晶片提供業界最佳的每瓦效能。,/ði/ /ˈbɛst/ /ˈaʊtkʌm/ /pɜː(ɹ)/ /wɒt/,Tech
 
-critical,It is critical that we launch the product on time.,adj. 關鍵的 / 嚴重的,我們按時發布產品是至關重要的。,/ˈkɹɪtɪkəl/,Life
-
 sense of obligation,He felt a strong sense of obligation to help his community.,n. 責任感,他感到有強烈的責任感去幫助他的社區。,/sɛn(t)s/ /ɔv/ /ɑb.ləˈɡeɪ.ʃən/,Life
 
 separate itself,The startup tried to separate itself from the competitors by offering unique features.,phr. 脫穎而出 / 與（競爭對手）區隔,這家新創公司試圖透過提供獨特的功能，讓自己從競爭對手中脫穎而出。,/ˈsɛpəɹət/ /ɪtˈsɛlf/,Economy
-
-fundamentally,The internet fundamentally changed how we communicate.,adv. 根本上地,網際網路從根本上改變了我們溝通的方式。,,Tech
 
 turned our business upside down,The new regulations completely turned our business upside down.,phr. 徹底改變了我們的業務 / 顛覆了我們的業務,新規範徹底顛覆了我們的業務。,turned our business /ˈʌpˌsaɪd/ /daʊn/,Life
 
@@ -1062,29 +1407,17 @@ to the point where,The noise grew to the point where we could no longer hear eac
 
 put pressure on,The tight deadline put a lot of pressure on the engineering team.,phr. 對...施加壓力,緊迫的截止日期給工程團隊帶來了很大的壓力。,/pʊt/ [ˈpɹɛʃ.ə(ɹ)] /ɒn/,Life
 
-power delivery,Efficient power delivery is crucial for high-performance processors.,n. 供電,高效率的供電對於高效能處理器至關重要。,/ˈpaʊ.ə(ɹ)/ /dɪˈlɪv(ə)ɹi/,Life
-
 big excitement,There is big excitement surrounding the upcoming product launch.,n. 巨大的興奮 / 萬分期待,大家對即將到來的產品發布感到非常興奮。,/bɪɡ/ /ɪkˈsaɪtmənt/,Life
 
 accelerate the innovation,Open source software helps accelerate the innovation in the tech industry.,phr. 加速創新,開源軟體有助於加速科技產業的創新。,/æk.ˈsɛl.ə.ˌɹeɪt/ /ði/ /ˌɪnəˈveɪʃən/,"Tech,Economy"
 
 the future of AI-driven enterprises,Data security will shape the future of AI-driven enterprises.,n. AI驅動企業的未來,資料安全將塑造AI驅動企業的未來。,/ði/ /ˈfjuːt͡ʃə/ /ɔv/ AI-driven enterprises,"Tech,Economy"
 
-all the way down to,Arm controls the architecture all the way down to the silicon.,phr. 一直到... / 深至...,Arm 對架構的控制一直延伸到最底層的晶片。,/ɔːl/ /ði/ /weɪ/ /daʊn/ /tʉː/,Tech
-
-coupled with,"With the ARM silicon coupled with a brand new line of AI accelerators, we have a power-efficient solution.",phr. 加上... / 結合...,結合 ARM 晶片與全新系列的 AI 加速器，我們擁有了一個節能的解決方案。,/ˈkʌpəld/ with,Tech
-
 a brand new line of AI accelerators,The company unveiled a brand new line of AI accelerators at the conference.,n. 全新系列的AI加速器,該公司在會議上推出了一款全新系列的AI加速器。,/æɪ/ /bɹand/ /njʉː/ /laɪn/ /ɔv/ /ˈɑ.i/ accelerators,"Tech,Economy"
 
 get (a lot) out of,You can get a lot out of this training course.,phr. 從...中獲益匪淺,你可以從這門培訓課程中獲益匪淺。,/ɡɛt/ (a lot) /æɔt/ /ɔv/,Life
 
-orchestration layer,Kubernetes serves as the orchestration layer for managing containers.,n. 編排層,Kubernetes 作為管理容器的編排層。,orchestration /leɪə/,Life
-
 strengthen the orchestration layer,We need to strengthen the orchestration layer to handle more concurrent tasks.,phr. 強化編排層,我們需要強化編排層以處理更多的並行任務。,/ˈstɹɛŋ(k)θən/ /ði/ orchestration /leɪə/,Life
-
-frontier,Quantum computing is the new frontier of computer science.,n. 前沿 / 邊界,量子運算是電腦科學的新前沿。,/fɹʌnˈtɪə/,Tech
-
-frontier AI system,Developing a frontier AI system requires massive computational resources.,n. 前沿AI系統 / 尖端AI系統,開發尖端AI系統需要龐大的運算資源。,frontier AI /ˈsɪstəm/,Tech
 
 the next wave of,The infrastructure powers the next wave of AI.,phr. 下一波...,這項基礎設施為下一波AI發展提供動力。,the /nɛkst/ /weɪv/ /ɔv/,Tech
 
@@ -1098,33 +1431,13 @@ the decade to come,AI will transform our lives in the decade to come.,n. 未來�
 
 stand out,Her exceptional coding skills made her stand out from the other candidates.,phr. 脫穎而出,她卓越的寫程式能力讓她從其他候選人中脫穎而出。,/stænd/ /æɔt/,Tech
 
-changing landscape,Companies must adapt to the changing landscape of the digital economy.,n. 不斷變化的格局,公司必須適應數位經濟不斷變化的格局。,/ˈtʃeɪndʒɪŋ/ landscape,"Tech,Economy"
-
 at times,He can be very difficult to work with at times.,adv. 有時候,他有時候會很難共事。,at /tɑemz/,Life
-
-friendliness,The friendliness of the staff made our stay very enjoyable.,n. 友善,員工的友善讓我們的住宿體驗非常愉快。,,Life
-
-approachableness,Her approachableness makes her a great mentor for junior developers.,n. 平易近人,她的平易近人使她成為初級開發人員的優秀導師。,,Life
-
-emerging talent recruiters,Our emerging talent recruiters are looking for fresh university graduates.,n. 新興人才招募人員 / 校園招募人員,我們的新興人才招募人員正在尋找應屆大學畢業生。,emerging /ˈtalənt/ recruiters,Life
-
-cloud to edge parity,Achieving cloud to edge parity ensures seamless deployment of applications.,n. 雲端到邊緣的對等性,實現雲端到邊緣的對等性可確保應用程式的無縫部署。,cloud to /ɛdʒ/ /ˈpæɹɪti/,Tech
-
-faith,I have complete faith in your ability to finish the project.,n. 信念 / 信任,我對你完成這個專案的能力充滿信心。,/feɪθ/,Life
 
 in the pace of progress of technology,We must constantly learn to keep up in the pace of progress of technology.,phr. 在科技進步的步伐中,我們必須不斷學習，以跟上科技進步的步伐。,in /ði/ /peɪs/ /ɔv/ /ˈpɹɒɡɹɛs/ /ɔv/ /tɛkˈnɒlədʒi/,Tech
 
-model sycophancy,Model sycophancy occurs when an AI agrees with the user even if the user is wrong.,n. 模型阿諛奉承 / AI迎合傾向,當AI即使在使用者錯誤時也附和使用者，就會發生模型阿諛奉承的情況。,/ˈmɒdl̩/ sycophancy,Tech
-
 by far,This is by far the most advanced chip we have ever designed.,adv. 顯然 / 遠遠,這顯然是我們設計過最先進的晶片。,/baɪ/ /fɑː/,Tech
 
-put us in a whole different zip code,This breakthrough will put us in a whole different zip code compared to our rivals.,phr. 讓我們進入一個完全不同的境界,這項突破將使我們相較於競爭對手進入一個完全不同的境界。,/pʊt/ /əs/ /ɪn/ /æɪ/ /həʊl/ different zip code,Life
-
-legal claim,The company is facing a massive legal claim over patent infringement.,n. 法律索賠 / 法律主張,該公司正面臨一項關於專利侵權的鉅額法律索賠。,/ˈliː.ɡəl/ /kleɪm/,"Economy,Global"
-
 suing for,They are suing for breach of contract.,phr. 起訴要求... / 控告...,他們因違約提起訴訟。,,Life
-
-dismiss,The judge decided to dismiss the case due to lack of evidence.,v. 駁回 / 解僱,由於缺乏證據，法官決定駁回此案。,/dɪsˈmɪs/,Life
 
 permanent charitable mission,The foundation was established with a permanent charitable mission.,n. 永久慈善使命,該基金會成立時抱持著永久慈善的使命。,/ˈpɜːmənənt/ charitable /ˈmɪʃn̩/,Life
 
@@ -1132,33 +1445,388 @@ undeserved benefits,Critics argue that the policy gives undeserved benefits to t
 
 jury trial,The defendant requested a jury trial instead of a bench trial.,n. 陪審團審判,被告要求進行陪審團審判，而不是法官審判。,/ˈd͡ʒʊə.ɹi/ /ˈtɹaɪəl/,Life
 
-juror,A juror must remain impartial throughout the trial.,n. 陪審員,陪審員在整個審判過程中必須保持公正。,/ˈdʒʊəɹɔɹ/,Life
+trajectory,The company continues on a strong upward trajectory in the AI market.,n. 發展軌跡；發展方向,該公司在 AI 市場上持續保持強勁的上升發展軌跡。,/tɹəˈdʒɛktəɹi/,"Tech,Economy"
 
-wrap one's head around,I just can't wrap my head around why she would quit such a good job.,phr. 理解，想通 (常接否定字 can't 表示想不透),我就是想不透她為什麼要辭掉這麼好的工作。,/ɹæp/ wʌnz /hɛd/ əˈɹaʊnd/,Life
-vault,The data is stored securely in an underground vault.,n./v. 金庫，保險庫；躍過,資料被安全地儲存在地下金庫中。,/vɔːlt/,"Economy,Life"
-hover,A helicopter hovered over the building.,v. 盤旋，徘徊,一架直升機在建築物上方盤旋。,/ˈhɒv.ər/,"Tech,Life"
-albeit,"The nation is adapting, albeit slowly, to the new global economy.",conj. 儘管，雖然,該國正在適應新的全球經濟，儘管過程緩慢。,/ɔːlˈbiː.ɪt/,"Life"
-discrepancy,There is some discrepancy between the two accounts.,n. 不一致，差異，出入,這兩份帳目之間有一些出入。,/dɪˈskrep.ən.si/,"Economy,Life"
-encompass,The job encompasses a wide range of responsibilities.,v. 包含，包括，圍繞,這項工作包含廣泛的職責。,/ɪnˈkʌm.pəs/,"Life,Global"
-cognitive,Some of her cognitive functions have been impaired.,adj. 認知的，感知的,她的部分認知功能受損了。,/ˈkɒɡ.nə.tɪv/,"Life,Tech"
-resilience,The resilience of the economy has come as a surprise to some.,n. 彈性，恢復力，韌性,經濟的韌性讓一些人感到驚訝。,/rɪˈzɪl.i.əns/,"Life,Economy"
-rationale,He explained the rationale behind the decision.,n. 根本原因，邏輯依據，基本理由,他解釋了這個決定背後的基本理由。,/ˌræʃ.əˈnɑːl/,"Life,Economy"
-identical,The two rooms were virtually identical.,adj. 完全相同的，極為相似的,這兩個房間幾乎完全相同。,/aɪˈden.tɪ.kəl/,"Life,Tech"
-grant,The government has agreed to grant us funding for the project.,v./n. 同意，准予，授予；撥款，補助金,政府已同意為我們的專案提供資金（撥款）。,/ɡrænt/,"Economy,Global"
-scarcity,A scarcity of medical supplies was becoming a serious problem.,n. 缺乏，不足，稀缺,醫療物資的短缺正成為一個嚴重的問題。,/ˈskersəti/,"Economy,Life"
-chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警察沿著街道追捕嫌疑犯。,/tʃeɪs/,"Life"
+recount,He recounted the events that led to the system failure.,v. 敘述；詳細講述,他詳細講述了導致系統故障的事件經過。,/ɹɪˈkaʊnt/,Tech
+
+frankly,"Frankly, the current design cannot handle this level of traffic.",adv. 坦白說；老實說,坦白說，目前的設計無法處理這種流量的負載。,/ˈfɹæŋkli/,Life
+
+factor,Power consumption is a key factor in mobile chip design.,n. 因素；要素,功耗是行動晶片設計中的關鍵因素。,/ˈfæktəɹ/,Tech
+
+form factor,This ultrabook packs high performance into a compact form factor.,n. 外形規格；產品型態,這款輕薄筆電將高效能封裝在緊湊的外形規格中。,/fɔːm ˈfæktəɹ/,Life
+
+expansive,The documentation provides an expansive overview of the system architecture.,adj. 廣闊的；涵蓋範圍廣的,這份文件提供了系統架構涵蓋範圍廣的全面概覽。,/ɪkˈspænsɪv/,Tech
+
+fascinating,It is fascinating to see how neural networks learn complex patterns.,adj. 令人著迷的,看到神經網路如何學習複雜的模式真是令人著迷。,/ˈfæsɪneɪtɪŋ/,Tech
+
+happenstance,"By pure happenstance, we discovered the bug during a routine demo.",n. 偶然；巧合,純屬巧合，我們在一次例行展示中發現了這個錯誤。,/ˈhæpənstæns/,Life
+
+secular,The shift toward cloud computing is a secular trend in the tech industry.,adj. 長期趨勢的；世俗的,轉向雲端運算是科技產業的一個長期趨勢。,/ˈsɛkjʊləɹ/,"Tech,Economy"
+
+segue,Let's make a quick segue into the next topic on our agenda.,n./v. 自然銜接；話題轉場,讓我們自然銜接到議程上的下一個話題。,/ˈsɛɡweɪ/,Life
+
+inundated,The support team was inundated with bug reports after the update.,adj. 被大量事物淹沒的；應接不暇的,更新發布後，支援團隊被大量的錯誤回報淹沒而應接不暇。,/ˈɪnʌndeɪtɪd/,Life
+
+payroll,The company has over five hundred employees on its payroll.,n. 薪資名冊；薪資總額,這家公司的薪資名冊上有超過五百名員工。,/ˈpeɪɹoʊl/,Economy
+
+badge,Please remember to wear your employee badge inside the building.,n. 識別證；徽章,在大樓內請記得配戴您的員工識別證。,/bædʒ/,Life
+
+strip,The build script strips debug symbols from the final binary.,v. 去除；剝除,建置腳本會從最終的二進位檔中去除除錯符號。,/stɹɪp/,Life
+
+account for,Memory leaks account for the majority of the crashes we observed.,phr. 解釋；占……比例；考量,記憶體洩漏占了我們觀察到的大多數當機原因。,/əˈkaʊnt fɔːɹ/,Life
+
+assertion,The program terminated because a runtime assertion failed.,n. 斷言；主張,因為執行時期的斷言失敗，程式終止了執行。,/əˈsɜːɹʃən/,Tech
+
+designate,We need to designate a primary contact for the security audit.,v. 指定；選定,我們需要為安全稽核指定一位主要聯絡人。,/ˈdɛzɪɡneɪt/,Tech
+
+inadequate,The existing cooling system is inadequate for the new server rack.,adj. 不足的；不充分的,現有的冷卻系統對於新的伺服器機架來說是不夠的。,/ɪnˈædɪkwət/,Tech
+
+investigate,Engineers are investigating the cause of the sudden latency spike.,v. 調查；查明,工程師正在調查延遲突然激增的原因。,/ɪnˈvɛstɪɡeɪt/,Life
+
+preliminary,Preliminary test results show a 20% improvement in frame rate.,adj. 初步的；預備的,初步測試結果顯示畫面更新率提升了 20%。,/pɹɪˈlɪmɪnɛɹi/,Life
+
+stale,Reading from a cache without invalidation may return stale data.,adj. 過期的；殘留未更新的,在未使快取失效的情況下讀取可能會回傳過期的資料。,/steɪl/,Tech
+
+symptom,High CPU usage is merely a symptom of a deeper algorithmic issue.,n. 症狀；問題徵兆,高 CPU 使用率只是更深層演算法問題的一個徵兆。,/ˈsɪmptəm/,Tech
+
+deterministic,"To debug effectively, we need a deterministic way to reproduce the crash.",adj. 確定性的,為了有效除錯，我們需要一種確定性的方法來重現當機。,/dɪˌtɜːmɪˈnɪstɪk/,Life
+
+vague,The error message was too vague to pinpoint what went wrong.,adj. 含糊的；不清楚的,錯誤訊息太過含糊，無法精確指出哪裡出了問題。,/veɪɡ/,Life
+
+mismatch,There is a version mismatch between the driver and the firmware.,n./v. 不相符；不匹配,驅動程式與韌體之間存在版本不匹配的問題。,/ˈmɪsmætʃ/,Tech
+
+successor,This new processor is the direct successor to last year's flagship chip.,n. 繼任者；後繼者,這款新處理器是去年旗艦晶片的直接後繼產品。,/səkˈsɛsəɹ/,Tech
+
+predecessor,The new GPU delivers twice the throughput of its predecessor.,n. 前任；前代產品,新款 GPU 提供的吞吐量是其前代產品的兩倍。,/ˈpɹɛdɪsɛsəɹ/,Life
+
+tessellation,Hardware tessellation adds fine geometric detail to 3D models.,n. 曲面細分；密鋪,硬體曲面細分為 3D 模型增加了精細的幾何細節。,/ˌtɛsəˈleɪʃən/,Tech
+
+premise,Our design is built on the premise that network bandwidth is limited.,n. 前提,我們的設計建立在網路頻寬有限的前提之上。,/ˈpɹɛmɪs/,Tech
+
+glossary,Please refer to the glossary at the back of the manual for technical terms.,n. 術語表；詞彙表,有關技術術語，請參閱手冊後方的術語表。,/ˈɡlɒsəɹi/,Tech
+
+conservative,We made a conservative estimate of the memory requirements.,adj. 保守的；謹慎的,我們對記憶體需求做出了保守的估計。,/kənˈsɜːɹvətɪv/,Life
+
+overhead,Context switching introduces additional CPU overhead.,n. 額外開銷；額外負擔,上下文切換會帶來額外的 CPU 開銷。,/ˈoʊvəɹhɛd/,Life
+
+handover,We scheduled a meeting to ensure a smooth handover of the project.,n. 交接；移交,我們安排了一場會議，以確保專案順利交接。,/ˈhændˌoʊvəɹ/,Life
+
+on par with,The mobile chip's graphics performance is now on par with entry-level consoles.,phr. 與……處於同等水準,這款行動晶片的繪圖效能現在已與入門級遊戲主機處於同等水準。,/ɒn pɑːɹ wɪð/,Tech
+
+least invasive,"For a hotfix, we should choose the least invasive change to minimize risk.",phr. 改動最少的；干預最小的,對於緊急修正，我們應該選擇改動最少的變更以將風險降到最低。,/liːst ɪnˈveɪsɪv/,Life
+
+with regard to,"With regard to your question on memory layout, please see section four.",phr. 關於；就……而言,關於您對記憶體配置的疑問，請參閱第四節。,/wɪð ɹɪˈɡɑːɹd tuː/,Life
+
+be up to speed on,It took the new engineer two weeks to be up to speed on our codebase.,phr. 掌握……的最新狀況,新來的工程師花了兩週時間才掌握我們程式碼庫的狀況。,/biː ʌp tuː spiːd ɒn/,Tech
+
+back and forth,"After some back and forth between the teams, we agreed on the API spec.",phr. 來回地；反覆地,在團隊之間來回討論之後，我們就 API 規格達成了共識。,/bæk ænd fɔːɹθ/,Life
+
+whichever comes first,"The warranty covers three years or 100,000 kilometers, whichever comes first.",phr. 以先發生者為準,保固期為三年或十萬公里，以先發生者為準。,/wɪtʃˈɛvəɹ kʌmz fɜːɹst/,Life
+
+subinstance,Each task is broken down and assigned to a dedicated subinstance.,n. 子實例；次級實例,每項任務都會被分解並指派給一個專用的子實例。,/ˈsʌbˌɪnstəns/,Life
+
+slope,A steeper slope on the graph indicates a faster rate of memory growth.,n. 斜率；斜坡,圖表上較陡的斜率表示記憶體成長速度較快。,/sloʊp/,Life
+
+epilogue,The compiler inserts a function epilogue to restore the stack pointer before returning.,n. 後記；尾聲,編譯器會在返回前插入函式尾聲（epilogue）以還原堆疊指標。,/ˈɛpɪlɒɡ/,Life
+
+solution,We need a scalable solution to handle the growing data volume.,n. 解決方法；解決方案,我們需要一個可擴展的解決方案來處理不斷成長的資料量。,/səˈluːʃən/,Tech
+
+firmware,Updating the device firmware resolved the power management bug.,n. 韌體,更新裝置韌體解決了電源管理的錯誤。,/ˈfɜːɹmwɛəɹ/,Tech
+
+driver,The graphics driver translates API calls into hardware commands.,n. 驅動程式,顯示卡驅動程式會將 API 呼叫轉換為硬體指令。,/ˈdɹaɪvəɹ/,Tech
+
+kernel,The operating system kernel manages hardware resources and process scheduling.,n. 作業系統核心,作業系統核心負責管理硬體資源與行程排程。,/ˈkɜːɹnəl/,Tech
+
+architecture,Modern GPU architecture is designed for massively parallel computation.,n. 架構,現代 GPU 架構是專為大規模平行運算而設計的。,/ˈɑːɹkɪtɛktʃəɹ/,Tech
+
+interconnect,A high-speed interconnect links the CPU and GPU for fast data transfer.,n. 互連結構；互連網路,高速互連結構連接了 CPU 與 GPU，以實現快速的資料傳輸。,/ˌɪntəɹkəˈnɛkt/,Tech
+
+subsystem,The memory subsystem plays a vital role in overall rendering performance.,n. 子系統,記憶體子系統在整體渲染效能中扮演至關重要的角色。,/ˈsʌbsɪstəm/,Tech
+
+virtualization,Hardware virtualization allows multiple virtual machines to share a single physical GPU.,n. 虛擬化,硬體虛擬化允許多個虛擬機器共用單一實體 GPU。,/ˌvɜːɹtʃuəlɪˈzeɪʃən/,Tech
+
+shader,The fragment shader calculates the final color of each pixel.,n. 著色器程式,片段著色器程式負責計算每個像素的最終顏色。,/ˈʃeɪdəɹ/,Tech
+
+compiler,The shader compiler optimizes the code for the target GPU architecture.,n. 編譯器,著色器編譯器會針對目標 GPU 架構對程式碼進行最佳化。,/kəmˈpaɪləɹ/,Tech
+
+binary,We precompile the shaders into a binary format to reduce loading time.,adj./n. 二進位的；二進位檔,我們將著色器預先編譯為二進位檔格式，以縮短載入時間。,/ˈbaɪnəɹi/,Life
+
+register,Using too many registers per thread can reduce shader occupancy.,n. 暫存器,每個執行緒使用過多暫存器會降低著色器的佔用率。,/ˈɹɛdʒɪstəɹ/,Life
+
+interrupt,The hardware raises an interrupt when the DMA transfer completes.,n./v. 中斷；中斷訊號,當 DMA 傳輸完成時，硬體會發出中斷訊號。,/ˈɪntəɹʌpt/,Tech
+
+thread,Each worker thread processes a portion of the input queue independently.,n. 執行緒,每個工作執行緒獨立處理輸入佇列的一部分。,/θɹɛd/,Life
+
+scheduler,The hardware scheduler assigns ready workgroups to available compute units.,n. 排程器,硬體排程器會將就緒的工作群組指派給可用的運算單元。,/ˈskɛdʒuːləɹ/,Tech
+
+queue,Commands are submitted to the command queue for asynchronous execution.,n. 佇列,指令會被提交到指令佇列中以進行非同步執行。,/kjuː/,Life
+
+buffer,We allocated a staging buffer to upload texture data to the GPU.,n. 緩衝區,我們配置了一個暫存緩衝區，用於將紋理資料上傳至 GPU。,/ˈbʌfəɹ/,Tech
+
+cache,Keeping frequently accessed data in the L1 cache minimizes memory latency.,n. 快取,將頻繁存取的資料保留在 L1 快取中可以將記憶體延遲降到最低。,/kæʃ/,Tech
+
+fence,The CPU waits on a fence to ensure the GPU has finished rendering the frame.,n. 同步柵欄；同步物件,CPU 會等待同步柵欄訊號，以確保 GPU 已完成該畫面的渲染。,/fɛns/,Life
+
+deadlock,Two threads waiting on each other's locks will result in a deadlock.,n. 死鎖,兩個執行緒互相等待對方的鎖定將會導致死鎖。,/ˈdɛdlɒk/,Life
+
+timeout,The driver resets the GPU if a command buffer exceeds the timeout limit.,n. 逾時；等候時間上限,如果指令緩衝區超過等候時間上限，驅動程式就會重置 GPU。,/ˈtaɪmaʊt/,Tech
+
+latency,High network latency can make real-time cloud gaming feel unresponsive.,n. 延遲時間,高網路延遲時間會讓即時雲端遊戲感覺反應遲鈍。,/ˈleɪtənsi/,Tech
+
+throughput,Batching smaller requests together significantly increases overall throughput.,n. 吞吐量；單位時間處理量,將較小的請求批次處理能顯著提升整體吞吐量。,/ˈθɹuːpʊt/,Life
+
+bandwidth,Compressing textures helps conserve precious memory bandwidth.,n. 頻寬,壓縮紋理有助於節省寶貴的記憶體頻寬。,/ˈbændwɪdθ/,Life
+
+workload,We need to profile how the GPU handles heavy compute workloads.,n. 工作負載,我們需要剖析 GPU 如何處理繁重的運算工作負載。,/ˈwɜːɹkloʊd/,Life
+
+benchmark,We ran a series of synthetic benchmarks to compare the two GPUs.,n./v. 基準測試,我們執行了一系列綜合基準測試來比較這兩款 GPU。,/ˈbɛntʃmɑːɹk/,Life
+
+profiling,Performance profiling revealed a bottleneck in the shadow pass.,n. 效能剖析,效能剖析顯示陰影繪製階段存在效能瓶頸。,/ˈpɹoʊfaɪlɪŋ/,Life
+
+occupancy,Higher shader occupancy helps hide memory access latency.,n. 佔用率,較高的著色器佔用率有助於隱藏記憶體存取延遲。,/ˈɒkjʊpənsi/,Life
+
+stall,A cache miss can cause the execution pipeline to stall while waiting for data.,v./n. 停滯；因等待而暫停,快取未命中可能會導致執行管線在等待資料時停滯。,/stɔːl/,Tech
+
+preemption,Fine-grained preemption allows high-priority tasks to interrupt long-running shaders.,n. 搶占,細粒度搶占允許高優先順序的任務中斷長時間執行的著色器。,/pɹiˈɛmpʃən/,Life
+
+starvation,Improper scheduling priorities can lead to thread starvation.,n. 資源飢餓,不當的排程優先順序可能會導致執行緒發生資源飢餓。,/stɑːɹˈveɪʃən/,Life
+
+arbitration,Bus arbitration determines which device gets access to the shared interconnect.,n. 仲裁；資源分配協調,匯流排仲裁決定哪個裝置可以存取共用的互連結構。,/ˌɑːɹbɪˈtɹeɪʃən/,Tech
+
+atomic,We use an atomic operation to safely increment the shared counter across threads.,adj. 原子性的；不可分割的,我們使用原子性操作來安全地在多個執行緒間遞增共用計數器。,/əˈtɒmɪk/,Tech
+
+coherent,Hardware cache coherence ensures all cores see a coherent view of memory.,adj. 一致的；連貫的,硬體快取一致性確保所有核心都能看到一致的記憶體內容。,/koʊˈhɪəɹənt/,Tech
+
+synchronize,You must synchronize access to shared memory to avoid race conditions.,v. 同步；使協調一致,你必須同步對共用記憶體的存取，以避免競爭條件。,/ˈsɪŋkɹənaɪz/,Life
+
+memory barrier,Insert a memory barrier to ensure all prior writes are visible to other threads.,n. 記憶體屏障,插入記憶體屏障以確保先前的所有寫入對其他執行緒都是可見的。,/ˈmɛməɹi ˈbæɹiəɹ/,Life
+
+address space,Each process runs in its own isolated virtual address space.,n. 位址空間,每個行程都在其各自隔離的虛擬位址空間中執行。,/əˈdɹɛs speɪs/,Tech
+
+page fault,Accessing unmapped virtual memory triggers a hardware page fault.,n. 分頁錯誤；頁面存取異常,存取未映射的虛擬記憶體會觸發硬體分頁錯誤。,/peɪdʒ fɔːlt/,Tech
+
+allocate,The driver failed to allocate sufficient device memory for the render target.,v. 分配；配置,驅動程式無法為渲染目標配置足夠的裝置記憶體。,/ˈæləkeɪt/,Tech
+
+reclaim,The system periodically runs a pass to reclaim unused memory buffers.,v. 回收資源,系統會定期執行清理程序，以回收未使用的記憶體緩衝區。,/ɹɪˈkleɪm/,Tech
+
+fragmented,"After hours of gameplay, the heap became heavily fragmented.",adj. 碎片化的；分散成小塊的,經過數小時的遊戲執行後，堆積記憶體變得嚴重碎片化。,/ˈfɹæɡmɛntɪd/,Life
+
+flush,We need to flush the write caches before reading the buffer on the CPU.,v. 清出、排出暫存內容,在 CPU 讀取該緩衝區之前，我們需要先清出寫入快取的暫存內容。,/flʌʃ/,Life
+
+invalidate,"Before reading updated GPU data, invalidate the corresponding CPU cache lines.",v. 使失效；標記為無效,在讀取更新後的 GPU 資料前，請先使對應的 CPU 快取列失效。,/ɪnˈvælɪdeɪt/,Tech
+
+drain,Wait for the command queue to drain before destroying the device context.,v. 排空；等待剩餘工作完成,在銷毀裝置環境之前，請先等待指令佇列排空並完成剩餘工作。,/dɹeɪn/,Tech
+
+suspend,The operating system suspends background tasks when the device enters sleep mode.,v. 暫停,當裝置進入睡眠模式時，作業系統會暫停背景任務。,/səˈspɛnd/,Tech
+
+resume,"Once the resource becomes available, the suspended thread can resume execution.",v. 恢復；繼續執行,一旦資源變為可用，暫停的執行緒就可以恢復執行。,/ɹɪˈzuːm/,Life
+
+initialize,Always initialize all struct members before passing them to the API.,v. 初始化,在將結構體成員傳遞給 API 之前，務必先將它們全部初始化。,/ɪˈnɪʃəlaɪz/,Life
+
+recovery,The driver's fault recovery mechanism prevented a full system crash.,n. 復原；恢復正常運作,驅動程式的錯誤復原機制防止了整個系統當機。,/ɹɪˈkʌvəɹi/,Tech
+
+watchdog,The hardware watchdog timer triggered a reset because the shader hung.,n. 看門狗；逾時監控機制,由於著色器卡死，硬體看門狗計時器觸發了重置。,/ˈwɒtʃdɒɡ/,Tech
+
+callback,Register a debug callback function to receive validation layer warnings.,n. 回呼函式,註冊一個除錯回呼函式，以接收驗證層的警告訊息。,/ˈkɔːlbæk/,Life
+
+handler,The interrupt handler must execute quickly to avoid delaying other events.,n. 處理常式；事件處理函式,中斷處理常式必須快速執行，以避免延遲其他事件。,/ˈhændləɹ/,Life
+
+runtime,Shader compilation can be done offline or at runtime.,n. 執行時期,著色器編譯可以離線完成，也可以在執行時期進行。,/ˈɹʌntaɪm/,Life
+
+dispatch,We recorded a command to dispatch 64 compute workgroups.,v./n. 派送；分派工作,我們記錄了一條指令，用來派送 64 個運算工作群組。,/dɪˈspætʃ/,Life
+
+invocation,Each shader invocation processes a single element of the input array.,n. 呼叫；一次執行實例,每次著色器呼叫（執行實例）都會處理輸入陣列中的單一元素。,/ˌɪnvəˈkeɪʃən/,Life
+
+workgroup,Threads within the same workgroup can share data via local shared memory.,n. 工作群組,同一個工作群組內的執行緒可以透過區域共用記憶體來共享資料。,/ˈwɜːɹkɡɹuːp/,Tech
+
+subgroup,Subgroup operations allow threads to exchange data directly without shared memory.,n. 子群組,子群組操作允許執行緒在不透過共用記憶體的情況下直接交換資料。,/ˈsʌbɡɹuːp/,Tech
+
+pipeline,Creating the graphics pipeline state object upfront avoids runtime hitches.,n. 處理管線；分階段處理流程,預先建立繪圖處理管線狀態物件可以避免執行時期的卡頓。,/ˈpaɪplaɪn/,Life
+
+geometry,Complex scene geometry can bottleneck the vertex processing stage.,n. 幾何；幾何資料,複雜的場景幾何資料可能會成為頂點處理階段的瓶頸。,/dʒiˈɒmətɹi/,Tech
+
+vertex,The vertex shader transforms 3D vertex positions into clip space.,n. 頂點,頂點著色器會將 3D 頂點位置轉換到裁切空間。,/ˈvɜːɹtɛks/,Life
+
+primitive,Triangles are the most common rendering primitives in modern graphics APIs.,n. 圖元；基本幾何單位,三角形是現代繪圖 API 中最常見的渲染圖元。,/ˈpɹɪmɪtɪv/,Life
+
+rasterization,"During rasterization, geometric primitives are converted into pixel fragments.",n. 光柵化,在光柵化過程中，幾何圖元會被轉換為像素片段。,/ˌɹæstəɹaɪˈzeɪʃən/,Life
+
+fragment,Early depth testing discards occluded fragments before running the fragment shader.,n. 片段；圖形處理片段,提早深度測試會在執行片段著色器之前丟棄被遮蔽的片段。,/ˈfɹæɡmənt/,Life
+
+culling,Back-face culling skips rendering triangles that face away from the camera.,n. 剔除,背面剔除會略過渲染背對攝影機的三角形。,/ˈkʌlɪŋ/,Life
+
+clipping,Polygons that extend beyond the viewing frustum undergo clipping.,n. 裁切,超出視錐體範圍的多邊形會進行裁切處理。,/ˈklɪpɪŋ/,Life
+
+meshlet,Mesh shaders process geometry in small clusters called meshlets.,n. 小型網格群,網格著色器以稱為小型網格群（meshlet）的小簇為單位來處理幾何資料。,/ˈmɛʃlət/,Tech
+
+topology,Make sure the primitive topology is set to triangle strip before drawing.,n. 拓樸；元素連接方式,在繪製之前，請確保圖元拓樸已設定為三角形帶。,/təˈpɒlədʒi/,Life
+
+viewport,The viewport transformation maps normalized device coordinates to screen pixels.,n. 視埠,視埠轉換會將標準化裝置座標映射到螢幕像素。,/ˈvjuːpɔːɹt/,Tech
+
+instancing,Geometry instancing allows us to render thousands of trees with a single draw call.,n. 實例化繪製,幾何實例化繪製讓我們能用單次繪製呼叫渲染數千棵樹。,/ˈɪnstənsɪŋ/,Life
+
+coalescing,Memory coalescing combines multiple thread accesses into a single memory transaction.,n. 合併；彙整,記憶體合併會將多個執行緒的存取彙整為單次記憶體交易。,/ˌkoʊəˈlɛsɪŋ/,Economy
+
+transaction,Unaligned memory accesses generate extra bus transactions and hurt performance.,n. 交易；一次完整操作或傳輸,未對齊的記憶體存取會產生額外的匯流排傳輸交易並降低效能。,/tɹænˈzækʃən/,Economy
+
+ownership,Queue family ownership transfer is required when sharing buffers across queues.,n. 所有權；管理責任歸屬,在佇列之間共用緩衝區時，需要進行佇列家族的所有權轉移。,/ˈoʊnəɹʃɪp/,Life
+
+dependency,Subpass dependencies define execution and memory ordering between render passes.,n. 依賴關係；相依項目,子通道依賴關係定義了渲染通道之間的執行與記憶體順序。,/dɪˈpɛndənsi/,Life
+
+constraint,We must optimize the algorithm under strict power and thermal constraints.,n. 限制；約束條件,我們必須在嚴格的功耗與散熱限制條件下最佳化演算法。,/kənˈstɹeɪnt/,Tech
+
+threshold,Dynamic resolution scaling kicks in when the frame time exceeds the threshold.,n. 閾值；觸發條件的界線,當畫面生成時間超過閾值時，動態解析度調整就會啟動。,/ˈθɹɛʃhoʊld/,Life
+
+regression,The latest commit introduced a 15% performance regression on mobile GPUs.,n. 更新造成的功能或效能退步,最新的程式碼提交在行動 GPU 上造成了 15% 的效能退步。,/ɹɪˈɡɹɛʃən/,Tech
+
+reproduce,Can you reproduce the flickering artifact on the reference driver?,v. 重現,你能在參考驅動程式上重現這個畫面閃爍的異常現象嗎？,/ˌɹiːpɹəˈduːs/,Tech
+
+reproducer,The QA team attached a minimal reproducer to the bug report.,n. 問題重現程式或測試案例,QA 團隊在錯誤回報中附上了一個最小的問題重現程式。,/ˌɹiːpɹəˈduːsəɹ/,Tech
+
+isolate,We disabled half the render passes to isolate the source of the corruption.,v. 隔離；縮小問題範圍,我們停用了一半的渲染通道，以縮小畫面損壞的問題範圍。,/ˈaɪsəleɪt/,Life
+
+diagnose,Hardware performance counters help us diagnose why the shader is stalling.,v. 診斷；查明問題,硬體效能計數器能幫助我們診斷著色器為何發生停滯。,/ˌdaɪəɡˈnoʊs/,Tech
+
+trace,We captured an API trace of the application to inspect every draw call.,n./v. 執行軌跡；追蹤紀錄,我們擷取了應用程式的 API 追蹤紀錄，以檢查每一次繪製呼叫。,/tɹeɪs/,Tech
+
+dump,"When a GPU hang occurs, the driver saves a crash dump for post-mortem analysis.",n./v. 資料傾印；狀態傾印,當發生 GPU 卡死時，驅動程式會儲存當機狀態傾印以供事後分析。,/dʌmp/,Tech
+
+exception,Dividing by zero in the kernel module triggered an unhandled hardware exception.,n. 例外；異常事件,在核心模組中除以零觸發了未處理的硬體例外事件。,/ɪkˈsɛpʃən/,Tech
+
+unrecoverable,The device encountered an unrecoverable error and had to be reinitialized.,adj. 無法復原的,裝置遇到無法復原的錯誤，必須重新初始化。,/ˌʌnɹɪˈkʌvəɹəbəl/,Tech
+
+workaround,"Until the firmware fix is ready, we implemented a driver workaround.",n. 暫時避開問題的方法,在韌體修正準備好之前，我們先實作了一個驅動程式端的暫時避開方法。,/ˈwɜːɹkəɹaʊnd/,Tech
+
+root cause,"After three days of debugging, we finally identified the root cause of the hang.",n. 根本原因,經過三天的除錯，我們終於找出了卡死的根本原因。,/ɹuːt kɔːz/,Life
+
+baseline,Run the test suite on the main branch first to establish a performance baseline.,n. 比較基準；基準結果,請先在主分支上執行測試套件，以建立效能比較基準。,/ˈbeɪslaɪn/,Life
+
+validation,Enabling the API validation layers caught several synchronization bugs early.,n. 驗證；確認符合需求,啟用 API 驗證層讓我們及早發現了好幾個同步錯誤。,/ˌvælɪˈdeɪʃən/,Life
+
+coverage,We added unit tests to increase code coverage for edge cases.,n. 涵蓋範圍；測試覆蓋率,我們新增了單元測試，以提高邊界情況的測試覆蓋率。,/ˈkʌvəɹɪdʒ/,Life
+
+optimize,We optimized the memory layout to improve cache locality.,v. 最佳化；改善效率,我們最佳化了記憶體配置以改善快取局部性。,/ˈɒptɪmaɪz/,Life
+
+implement,The team plans to implement the new ray tracing extension next quarter.,v. 實作；實施,團隊計畫在下一季實作新的光線追蹤擴充功能。,/ˈɪmplɪmɛnt/,Life
+
+deploy,"Once the patch passes qualification, we will deploy it to production servers.",v. 部署,一旦修補程式通過驗證，我們就會將其部署到正式環境伺服器。,/dɪˈplɔɪ/,Tech
+
+patch,He submitted a patch to fix the memory leak in the command allocator.,n./v. 修補程式；程式碼修正,他提交了一個修補程式，以修復指令配置器中的記憶體洩漏。,/pætʃ/,Tech
+
+merge,Please resolve all merge conflicts before requesting a code review.,v./n. 合併,在請求程式碼審查之前，請先解決所有合併衝突。,/mɜːɹdʒ/,Tech
+
+revert,We had to revert the change because it broke backward compatibility.,v. 恢復到先前狀態,我們不得不還原該變更，因為它破壞了向下相容性。,/ɹɪˈvɜːɹt/,Life
+
+cherry-pick,Can you cherry-pick the bugfix commit onto the release branch?,v. 挑選特定提交並套用,你能把那個錯誤修正提交挑選並套用到發行分支上嗎？,/ˈtʃɛɹi pɪk/,Life
+
+snapshot,The profiler takes a snapshot of GPU memory usage at the end of each frame.,n. 快照；某一時間點的狀態紀錄,剖析器會在每個畫面結束時拍下 GPU 記憶體使用量的狀態快照。,/ˈsnæpʃɒt/,Life
+
+codebase,Refactoring a legacy codebase requires careful planning and thorough testing.,n. 程式碼庫；整套原始碼,重構舊有的程式碼庫需要仔細的規劃與徹底的測試。,/ˈkoʊdbeɪs/,Tech
+
+configuration,The bug only occurs under a specific multi-monitor hardware configuration.,n. 設定；配置,這個錯誤只會在特定的多螢幕硬體配置下發生。,/kənˌfɪɡjəˈɹeɪʃən/,Tech
+
+compatible,The new driver remains backward compatible with older application binaries.,adj. 相容的,新版驅動程式仍與較舊的應用程式二進位檔保持向下相容。,/kəmˈpætəbəl/,Tech
+
+robust,A robust error-handling design prevents minor glitches from crashing the app.,adj. 穩健的；強健的,穩健的錯誤處理設計能防止小異常導致應用程式當機。,/ɹoʊˈbʌst/,Tech
+
+clarify,Could you clarify whether this register bit is cleared automatically by hardware?,v. 釐清；說明清楚,您能釐清這個暫存器位元是否會由硬體自動清除嗎？,/ˈklæɹɪfaɪ/,Tech
+
+specify,The specification does not specify the exact behavior for out-of-bounds reads.,v. 明確說明；指定,規格書中並未明確說明越界讀取的確切行為。,/ˈspɛsɪfaɪ/,Life
+
+evaluate,We need to evaluate the trade-off between image quality and rendering speed.,v. 評估,我們需要評估畫質與渲染速度之間的取捨。,/ɪˈvæljueɪt/,Life
+
+feasible,Rewriting the entire compiler in two weeks is simply not feasible.,adj. 可行的,在兩週內重寫整個編譯器是完全不可行的。,/ˈfiːzəbəl/,Life
+
+justify,The minor performance gain does not justify the added code complexity.,v. 證明……合理；提出理由,微幅的效能提升不足以證明增加程式碼複雜度是合理的。,/ˈdʒʌstɪfaɪ/,Tech
+
+priority,Fixing the customer-reported crash is our top priority this week.,n. 優先順序；優先程度,修復客戶回報的當機問題是我們本週的第一優先事項。,/pɹaɪˈɔːɹəti/,Life
+
+pending,The driver queues up pending interrupts and processes them in order.,adj. 待處理的；等待完成的,驅動程式會將待處理的中斷排入佇列，並依序處理它們。,/ˈpɛndɪŋ/,Tech
+
+tentative,We have a tentative release date set for the end of next month.,adj. 暫定的,我們暫定在下個月底發布版本。,/ˈtɛntətɪv/,Life
+
+scope,Supporting legacy hardware is outside the scope of this project.,n. 範圍,支援舊有硬體超出了本專案的範圍。,/skoʊp/,Tech
+
+criterion,Low power consumption is our primary criterion for selecting the component.,n. 標準；準則,低功耗是我們挑選該組件的主要準則。,/kɹaɪˈtɪəɹiən/,Life
+
+impact,Enabling this workaround has a negligible impact on frame rate.,n./v. 影響,啟用這個暫時避開方法對畫面更新率的影響微乎其微。,/ˈɪmpækt/,Life
+
+deliverable,The key deliverables for this sprint include the API header and test suite.,n. 交付項目；應交付成果,本次衝刺週期的主要交付項目包含 API 標頭檔與測試套件。,/dɪˈlɪvəɹəbəl/,Life
+
+milestone,Passing full conformance testing was a major milestone for the driver team.,n. 里程碑,通過完整的一致性測試是驅動程式團隊的重要里程碑。,/ˈmaɪlstoʊn/,Tech
+
+blocker,This memory corruption bug is a release blocker that must be fixed today.,n. 阻礙進度的問題,這個記憶體損壞錯誤是阻礙版本發布的問題，必須在今天修復。,/ˈblɒkəɹ/,Life
+
+rework,Clear requirements upfront can save weeks of rework later on.,n./v. 重新修改；返工,前期明確的需求可以省去後續數週的返工修改。,/ˌɹiːˈwɜːɹk/,Life
+
+expertise,Debugging silicon-level timing issues requires deep hardware expertise.,n. 專業知識,除錯晶片層級的時序問題需要深厚的硬體專業知識。,/ˌɛkspɜːɹˈtiːz/,Tech
+
+counterpart,I discussed the interface changes with my counterpart on the firmware team.,n. 對應的人或事物,我與韌體團隊中對應負責的同事討論了介面變更。,/ˈkaʊntəɹpɑːɹt/,Life
+
+consensus,"After reviewing the benchmark data, the architects reached a consensus.",n. 共識,在檢視基準測試資料後，架構師們達成了共識。,/kənˈsɛnsəs/,Tech
+
+concise,Write a concise summary of the root cause in the commit message.,adj. 簡潔的,請在提交訊息中寫下根本原因的簡潔摘要。,/kənˈsaɪs/,Life
+
+comprehensive,We ran a comprehensive set of stress tests before signing off the release.,adj. 全面的,在簽核發布版本之前，我們執行了一套全面的壓力測試。,/ˌkɒmpɹɪˈhɛnsɪv/,Life
+
+substantial,The new caching strategy yielded a substantial reduction in memory traffic.,adj. 大量的；相當大的,新的快取策略大幅減少了記憶體流量。,/səbˈstænʃəl/,Life
+
+significant,There is no significant difference in latency between the two approaches.,adj. 顯著的；重要的,這兩種方法在延遲時間上沒有顯著差異。,/sɪɡˈnɪfɪkənt/,Life
+
+underlying,The API abstracts away the details of the underlying hardware architecture.,adj. 底層的；根本的,該 API 抽象化並隱藏了底層硬體架構的細節。,/ˌʌndəɹˈlaɪɪŋ/,Tech
+
+explicit,Modern graphics APIs give developers explicit control over memory management.,adj. 明確的；明文規定的,現代繪圖 API 賦予開發者對記憶體管理的明確控制權。,/ɪkˈsplɪsɪt/,Life
+
+implicit,Avoid relying on implicit type conversions in performance-critical shader code.,adj. 隱含的；未明說的,在對效能要求嚴苛的著色器程式碼中，應避免依賴隱含的型別轉換。,/ɪmˈplɪsɪt/,Tech
+
+assumption,The optimization relies on the assumption that input arrays are 16-byte aligned.,n. 假設；前提,這項最佳化依賴於輸入陣列皆按 16 位元組對齊的假設。,/əˈsʌmpʃən/,Life
+
+correlation,Our logs show a strong correlation between high die temperature and clock throttling.,n. 相關性,我們的日誌顯示晶片高溫與時脈降頻之間有很強的相關性。,/ˌkɔːɹəˈleɪʃən/,Tech
+
+equivalent,These two shader expressions are mathematically equivalent.,adj./n. 等同的；等效的,這兩個著色器運算式在數學上是等效的。,/ɪˈkwɪvələnt/,Life
+
+comparable,Our new mobile core achieves performance comparable to desktop processors.,adj. 可比較的；比得上的,我們的新款行動核心達到了可與桌上型處理器比擬的效能。,/ˈkɒmpəɹəbəl/,Life
+
+simultaneous,The hardware supports simultaneous execution of graphics and compute queues.,adj. 同時發生的,該硬體支援繪圖佇列與運算佇列的同時執行。,/ˌsaɪməlˈteɪniəs/,Tech
+
+subsequent,"The initial allocation is slow, but subsequent accesses are cached and fast.",adj. 後續的,初次配置較慢，但後續的存取都會經過快取而非常快速。,/ˈsʌbsɪkwənt/,Life
+
+likelihood,Adding automated regression tests reduces the likelihood of shipping broken builds.,n. 可能性,新增自動化迴歸測試能降低發布損壞版本的可能性。,/ˈlaɪklihʊd/,Tech
+
+perspective,"From a system architecture perspective, unified memory simplifies data sharing.",n. 觀點；看事情的角度,從系統架構的角度來看，統一記憶體簡化了資料共享。,/pəɹˈspɛktɪv/,Tech
+
+incorporate,The next driver release will incorporate all the latest security patches.,v. 納入；併入,下一個驅動程式版本將納入所有最新的安全修補程式。,/ɪnˈkɔːɹpəɹeɪt/,Tech
+
+integrate,We need to integrate the third-party physics engine into our rendering pipeline.,v. 整合,我們需要將第三方物理引擎整合進我們的渲染管線中。,/ˈɪntɪɡɹeɪt/,Life
+
+legacy,We still maintain a compatibility layer for legacy OpenGL applications.,adj./n. 舊有的；沿用的,我們仍然為舊有的 OpenGL 應用程式維護一個相容層。,/ˈlɛɡəsi/,Tech
+
+mechanism,A semaphore provides a lightweight mechanism for GPU-to-GPU synchronization.,n. 機制,號誌（Semaphore）提供了一種輕量級的 GPU 間同步機制。,/ˈmɛkənɪzəm/,Life
+
+redundancy,Dual power supplies provide hardware redundancy in case one unit fails.,n. 備援；冗餘,雙電源供應器提供硬體備援，以防其中一個單元故障。,/ɹɪˈdʌndənsi/,Tech
+
+potential,Static analysis tools help catch potential null pointer dereferences early.,adj./n. 潛在的；潛力,靜態分析工具能幫助及早捕捉潛在的空指標存取錯誤。,/pəˈtɛnʃəl/,Life
+
+extensive,The new chip underwent extensive validation before entering mass production.,adj. 廣泛的,這款新晶片在進入量產前經過了廣泛的驗證。,/ɪkˈstɛnsɪv/,Tech
+
+accordingly,Detect the available VRAM at startup and adjust texture quality accordingly.,adv. 相應地；因此,在啟動時偵測可用的視訊記憶體，並相應地調整紋理品質。,/əˈkɔːɹdɪŋli/,Life
+
+whereas,"Vertex shaders run once per vertex, whereas fragment shaders run per pixel fragment.",conj. 然而；相較之下,頂點著色器對每個頂點執行一次，相較之下，片段著色器則是對每個像素片段執行。,/wɛəɹˈæz/,Life
+
+nonetheless,"The optimization was complex to implement; nonetheless, the 30% speedup made it worthwhile.",adv. 儘管如此；仍然,這項最佳化實作起來很複雜；儘管如此，30% 的加速使其非常值得。,/ˌnʌnðəˈlɛs/,Life
 /*CSV_END*/</script>
 
-        <div class="controls-wrapper">
+    <div class="controls-wrapper">
         <div class="controls-row">
-            <label class="switch-label"><input type="checkbox" id="auto-switch"> Auto</label>
-            <label class="switch-label"><input type="checkbox" id="random-switch"> Rand</label>
+            <label class="switch-label mode-switch"><input type="checkbox" id="auto-switch"><span class="switch-dot"></span>Auto</label>
+            <label class="switch-label mode-switch"><input type="checkbox" id="random-switch"><span class="switch-dot"></span>Rand</label>
         </div>
+        <div class="controls-divider"></div>
         <div class="controls-row">
-            <label class="switch-label"><input type="checkbox" value="Life" checked> Life</label>
-            <label class="switch-label"><input type="checkbox" value="Tech" checked> Tech</label>
-            <label class="switch-label"><input type="checkbox" value="Economy" checked> Econ</label>
-            <label class="switch-label"><input type="checkbox" value="Global" checked> Glb</label>
+            <label class="switch-label"><input type="checkbox" value="Life" checked><span class="switch-dot"></span>Life</label>
+            <label class="switch-label"><input type="checkbox" value="Tech" checked><span class="switch-dot"></span>Tech</label>
+            <label class="switch-label"><input type="checkbox" value="Economy" checked><span class="switch-dot"></span>Econ</label>
+            <label class="switch-label"><input type="checkbox" value="Global" checked><span class="switch-dot"></span>Glb</label>
         </div>
     </div>
 
@@ -1175,12 +1843,15 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
             <div class="title" id="card-title">標題</div>
             <div class="content" id="card-content">內容</div>
             <div class="progress" id="card-progress">進度</div>
+            <div class="bottom-progress-track">
+                <div class="bottom-progress-fill" id="bottom-progress-fill"></div>
+            </div>
         </div>
 
     </div>
     <div class="instructions">
-        💻 <b>電腦版：</b> 方向鍵左右翻頁<br>
-        📱 <b>手機版：</b> 點擊卡片左右側邊翻頁
+        <span>💻 電腦：<span class="kbd-key">←</span> <span class="kbd-key">→</span> 翻頁 · <span class="kbd-key">S</span> 發音</span>
+        <span>📱 手機：點擊卡片左右側翻頁</span>
     </div>
 
     <script>
@@ -1189,16 +1860,16 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
         let currentWordIdx = 0;
         let currentStateIdx = 0;
 
-        const stateTitles = ["1", "2", "3", "4"];
+        const stateLabels = ["單字 Word", "例句 Context", "釋義 Meaning", "中譯 Translation"];
         
-        // 更加淺色、極度柔和透亮的漸層背景，確保文字高對比度
+        // 精選高質感柔和紙感漸層背景，兼具溫潤視覺與極佳文字對比度
         const cardBgColors = [
-            "linear-gradient(135deg, #fff9e6 0%, #ffe6e6 100%)", // 極淺鵝黃到極淡粉
-            "linear-gradient(135deg, #f0fefa 0%, #fff2fd 100%)", // 冰透薄荷到極淺紫
-            "linear-gradient(135deg, #f9f2ff 0%, #ebf5ff 100%)", // 極淺紫到冰霧藍
-            "linear-gradient(135deg, #fff2fd 0%, #ffe3ee 100%)", // 透亮白粉到淺玫瑰
-            "linear-gradient(135deg, #f5ffe3 0%, #e3fce9 100%)", // 極淺草綠到冰透綠
-            "linear-gradient(135deg, #fff9f0 0%, #ffebe6 100%)"  // 極淡蜜桃到極淡橘
+            "linear-gradient(145deg, #fffdf7 0%, #fef3e8 100%)", // 暖米晨光
+            "linear-gradient(145deg, #f6fdfb 0%, #eef6ff 100%)", // 冰川薄荷
+            "linear-gradient(145deg, #fbf8ff 0%, #f0f5ff 100%)", // 暮霧薰衣草
+            "linear-gradient(145deg, #fff9fb 0%, #feeef3 100%)", // 櫻粉微光
+            "linear-gradient(145deg, #f8fdf5 0%, #ebf9f1 100%)", // 鼠尾草白
+            "linear-gradient(145deg, #fffbf5 0%, #fff0eb 100%)"  // 杏桃柔光
         ];
 
         function parseCSV(str) {
@@ -1253,6 +1924,21 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
             }
         }
 
+        function speakCurrentText(e) {
+            if (e) e.stopPropagation();
+            if (!('speechSynthesis' in window) || wordsData.length === 0) return;
+            const item = wordsData[currentWordIdx];
+            // 在第 1、3 頁念單字，在第 2、4 頁念例句第一句
+            let textToSpeak = (currentStateIdx === 0 || currentStateIdx === 2)
+                ? item[0].split('/')[0].replace(/[\[\]()]/g, '').trim()
+                : item[1].split('\n')[0].trim();
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(textToSpeak);
+            utter.lang = 'en-US';
+            utter.rate = 0.95;
+            window.speechSynthesis.speak(utter);
+        }
+
         function render() {
             if (wordsData.length === 0) return;
             const item = wordsData[currentWordIdx];
@@ -1260,8 +1946,11 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
             const cardTitle = document.getElementById('card-title');
             const cardContent = document.getElementById('card-content');
             const cardProgress = document.getElementById('card-progress');
+            const bottomFill = document.getElementById('bottom-progress-fill');
 
-            cardTitle.innerText = '';
+            // 左上角顯示階段名稱與自動倒數計時器預留區
+            cardTitle.innerHTML = `<span class="state-dot-badge"></span><span>${stateLabels[currentStateIdx]}</span><span id="auto-timer" style="display:none; margin-left:4px; color:#d97706; font-family:'JetBrains Mono',monospace;"></span>`;
+
             // 清空舊內容
             cardContent.innerHTML = '';
             
@@ -1270,43 +1959,49 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
             }
 
             // 輔助函數：將文字以 div 方式附加，若有多行則套用小圓點與縮排對齊
-            function appendLines(container, text, color, forceNoBullet = false, highlightWord = null) {
+            function appendLines(container, text, color, forceNoBullet = false, highlightWord = null, parsePOS = false) {
                 text = text.trim();
                 const lines = text.split('\n').filter(line => line.trim() !== '');
-                // 如果文字超過一行，且沒有強制關閉符號，則加上小圓點
                 const useBullet = lines.length > 1 && !forceNoBullet;
                 
-                lines.forEach(line => {
+                lines.forEach((line, idx) => {
                     const div = document.createElement('div');
                     div.style.color = color;
+                    if (idx > 0) div.style.marginTop = '0.35em';
                     
                     let htmlContent = escapeHTML(line.trim());
+
+                    // 美化詞性前綴 (如 n. / v. / adj. / phr.)
+                    if (parsePOS) {
+                        htmlContent = htmlContent.replace(/^((?:[a-z]+\.?\/)+[a-z]+\.|(?:n|v|adj|adv|phr|prep|conj)\.)\s*/i, '<span class="pos-badge">$1</span>');
+                    }
+
                     if (highlightWord) {
                         const cleanWord = highlightWord.split('/')[0].trim();
                         const pattern = cleanWord.includes(' ') 
                             ? cleanWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-                            : cleanWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "(?:s|es|d|ed|ing|ly)?";
+                            : cleanWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "(?:s|es|d|ed|ing|ly|er|est)?";
                         const regex = new RegExp(`\\b(${pattern})\\b`, 'gi');
-                        htmlContent = htmlContent.replace(regex, `<span style="color: #e53e3e; font-weight: bold;">$1</span>`);
+                        htmlContent = htmlContent.replace(regex, `<span class="kw-highlight">$1</span>`);
                     }
 
                     if (useBullet) {
-                        // 使用 Flexbox 確保小圓點和多行文字完美對齊
                         div.style.display = "flex";
-                        div.style.alignItems = "flex-start"; // 讓圓點對齊第一行
+                        div.style.alignItems = "flex-start";
                         
                         if (currentStateIdx === 2 || currentStateIdx === 0) {
-                            div.style.justifyContent = "center"; // 置中頁面的處理
+                            div.style.justifyContent = "center";
                         }
                         
                         const bullet = document.createElement('span');
                         bullet.innerHTML = '&bull;';
-                        bullet.style.marginRight = '0.5em'; // 圓點與文字的間距
-                        bullet.style.flexShrink = '0'; // 防止圓點被壓縮
+                        bullet.style.marginRight = '0.55em';
+                        bullet.style.color = '#94a3b8';
+                        bullet.style.flexShrink = '0';
                         
                         const txt = document.createElement('span');
                         txt.innerHTML = htmlContent;
-                        txt.style.textAlign = "left"; // 確保換行後的文字靠左對齊
+                        txt.style.textAlign = "left";
                         
                         div.appendChild(bullet);
                         div.appendChild(txt);
@@ -1317,21 +2012,20 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
                 });
             }
 
-            const engColor = "#1a202c"; // 較深的黑色
-            const chtColor = "#2b6cb0"; // 稍微帶點藍色以區別中文翻譯
+            const engColor = "#0f172a"; // 深邃石板黑
+            const chtColor = "#1e40af"; // 質感皇家藍
 
             // 輔助函數：顯示單字與音標
             function displayWordWithIPA(wordText, ipaText) {
                 appendLines(cardContent, wordText, engColor, true);
                 if (ipaText && ipaText.trim() !== '') {
-                    const ipaDiv = document.createElement('div');
-                    ipaDiv.style.color = "#718096"; // 較淺的灰色
-                    ipaDiv.style.fontSize = "0.6em"; // 縮小音標字體
-                    ipaDiv.style.marginTop = "8px";
-                    ipaDiv.style.fontWeight = "normal";
-                    ipaDiv.style.textAlign = "center";
-                    ipaDiv.textContent = ipaText.trim();
-                    cardContent.appendChild(ipaDiv);
+                    const ipaWrap = document.createElement('div');
+                    ipaWrap.style.textAlign = "center";
+                    const ipaSpan = document.createElement('span');
+                    ipaSpan.className = 'ipa-badge';
+                    ipaSpan.textContent = ipaText.trim();
+                    ipaWrap.appendChild(ipaSpan);
+                    cardContent.appendChild(ipaWrap);
                 }
             }
 
@@ -1342,55 +2036,69 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
             } else if (currentStateIdx === 2) {
                 displayWordWithIPA(item[0], item[4]);
                 
-                const gap = document.createElement('div');
-                gap.style.height = "1em";
-                cardContent.appendChild(gap);
+                const divider = document.createElement('div');
+                divider.className = 'content-divider';
+                cardContent.appendChild(divider);
                 
-                appendLines(cardContent, item[2], chtColor);
+                appendLines(cardContent, item[2], chtColor, false, null, true);
             } else if (currentStateIdx === 3) {
                 appendLines(cardContent, item[1], engColor, false, item[0]);
                 
-                const gap = document.createElement('div');
-                gap.style.height = "1em";
-                cardContent.appendChild(gap);
+                const divider = document.createElement('div');
+                divider.className = 'content-divider';
+                cardContent.appendChild(divider);
                 
                 appendLines(cardContent, item[3], chtColor);
             }
-            cardProgress.innerText = `${currentWordIdx + 1} / ${wordsData.length}  |  第 ${currentStateIdx + 1} 頁`;
 
-            // 渲染標籤
-            const oldTags = cardElement.querySelectorAll('.card-tag');
-            oldTags.forEach(t => t.remove());
+            // 底部進度：左側卡片序號、中間 4 階段圓點、右側頁數
+            const dotsHTML = [0, 1, 2, 3].map(i =>
+                `<span class="step-dot ${i === currentStateIdx ? 'active' : ''}"></span>`
+            ).join('');
+            cardProgress.innerHTML = `
+                <span class="progress-count">${currentWordIdx + 1} / ${wordsData.length}</span>
+                <div class="step-dots">${dotsHTML}</div>
+                <span class="step-label">第 ${currentStateIdx + 1} / 4 頁</span>
+            `;
+
+            if (bottomFill) {
+                const progressPct = ((currentWordIdx * 4 + currentStateIdx + 1) / (wordsData.length * 4)) * 100;
+                bottomFill.style.width = `${progressPct}%`;
+            }
+
+            // 渲染右上角標籤與發音按鈕
+            const oldTopRight = cardElement.querySelectorAll('.card-top-right');
+            oldTopRight.forEach(t => t.remove());
+
+            const topRightContainer = document.createElement('div');
+            topRightContainer.className = 'card-top-right';
+
             if (item[5]) {
                 const tags = item[5].split(',');
-                const tagsContainer = document.createElement('div');
-                tagsContainer.className = 'card-tag';
-                tagsContainer.style.position = 'absolute';
-                tagsContainer.style.top = '20px';
-                tagsContainer.style.right = '20px';
-                tagsContainer.style.display = 'flex';
-                tagsContainer.style.gap = '8px';
-                
                 tags.forEach(tag => {
+                    const cleanTag = tag.trim();
+                    if (!cleanTag) return;
                     const tagSpan = document.createElement('span');
-                    tagSpan.textContent = tag.trim();
-                    tagSpan.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
-                    tagSpan.style.color = '#2d3748';
-                    tagSpan.style.padding = '4px 10px';
-                    tagSpan.style.borderRadius = '12px';
-                    tagSpan.style.fontSize = '0.75rem';
-                    tagSpan.style.fontWeight = 'bold';
-                    tagSpan.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                    tagsContainer.appendChild(tagSpan);
+                    tagSpan.className = `tag-pill tag-${cleanTag}`;
+                    tagSpan.textContent = cleanTag;
+                    topRightContainer.appendChild(tagSpan);
                 });
-                cardElement.appendChild(tagsContainer);
             }
+
+            const speakBtn = document.createElement('button');
+            speakBtn.className = 'speak-btn';
+            speakBtn.title = '朗讀發音 (快捷鍵 S)';
+            speakBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`;
+            speakBtn.addEventListener('click', speakCurrentText);
+            topRightContainer.appendChild(speakBtn);
+
+            cardElement.appendChild(topRightContainer);
 
             // 根據單字索引更換卡片背景顏色
             cardElement.style.background = cardBgColors[currentWordIdx % cardBgColors.length];
 
             // 字體粗細與對齊設定
-            cardContent.style.fontWeight = currentStateIdx === 0 ? "bold" : "normal";
+            cardContent.style.fontWeight = currentStateIdx === 0 ? "700" : "500";
             
             // 只有英文例句和英文例句翻譯靠左對齊，其餘維持置中
             if (currentStateIdx === 1 || currentStateIdx === 3) {
@@ -1405,8 +2113,7 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
             cardContent.style.fontSize = currentSize + "px";
 
             // 文字太多時自動依卡片大小縮小字體
-            // 預留標題與進度條的空間 (扣除約 100px)
-            const maxContentHeight = cardElement.clientHeight - 100;
+            const maxContentHeight = cardElement.clientHeight - 110;
             while (cardContent.scrollHeight > maxContentHeight && currentSize > 14) {
                 currentSize--;
                 cardContent.style.fontSize = currentSize + "px";
@@ -1553,12 +2260,20 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight') nextPage();
-            else if (e.key === 'ArrowLeft') prevPage();
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                nextPage();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                prevPage();
+            } else if (e.key === 's' || e.key === 'S') {
+                speakCurrentText();
+            }
         });
 
-        // 手機版點擊螢幕左右兩側
+        // 手機版與電腦版點擊卡片左右兩側翻頁
         document.getElementById('card').addEventListener('click', (e) => {
+            if (e.target.closest('.speak-btn')) return;
             const rect = document.getElementById('card').getBoundingClientRect();
             const clickX = e.clientX - rect.left;
             if (clickX > rect.width / 2) {
@@ -1589,35 +2304,18 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
             }
         }
 
-        init();
-    
-        
         let autoFlipInterval = null;
         let remainingSeconds = 0;
         const stateDurations = [5, 8, 6, 8];
         
         function updateTimerDisplay() {
-            let timerEl = document.getElementById('auto-timer');
-            if (!timerEl) {
-                timerEl = document.createElement('div');
-                timerEl.id = 'auto-timer';
-                timerEl.style.position = 'absolute';
-                timerEl.style.top = '20px';
-                timerEl.style.left = '20px';
-                timerEl.style.fontSize = '12px';
-                timerEl.style.fontWeight = 'bold';
-                timerEl.style.color = '#718096';
-                timerEl.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
-                timerEl.style.padding = '4px 10px';
-                timerEl.style.borderRadius = '12px';
-                timerEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                document.getElementById('card').appendChild(timerEl);
-            }
+            const timerEl = document.getElementById('auto-timer');
+            if (!timerEl) return;
             
             const autoSwitch = document.getElementById('auto-switch');
             if (autoSwitch && autoSwitch.checked) {
-                timerEl.style.display = 'block';
-                timerEl.textContent = remainingSeconds + 's';
+                timerEl.style.display = 'inline';
+                timerEl.textContent = `· ${remainingSeconds}s`;
             } else {
                 timerEl.style.display = 'none';
             }
@@ -1640,7 +2338,7 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
                     }
                 }, 1000);
             } else {
-                updateTimerDisplay(); // hide it
+                updateTimerDisplay();
             }
         }
         
@@ -1657,7 +2355,6 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
             } else {
                 wordsData = originalWordsData.filter(row => {
                     const rowTags = row[5] ? row[5].split(',').map(t => t.trim()) : ['Life'];
-                    // 如果單字有任何一個標籤在選取的標籤內，就顯示
                     return rowTags.some(tag => checkedTags.includes(tag));
                 });
             }
@@ -1680,6 +2377,7 @@ chase,The police chased the suspect down the street.,v./n. 追逐，追捕,警�
             cb.addEventListener('change', applyFilters);
         });
 
-</script>
+        init();
+    </script>
 </body>
 </html>
